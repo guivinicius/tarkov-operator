@@ -1,0 +1,357 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Status bar */
+#status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+}
+
+.indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.indicator.idle { background: #888; }
+.indicator.active { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
+
+#status-text { flex: 1; font-weight: 600; font-size: 13px; }
+
+.ptt-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ptt-picker label { font-size: 11px; color: #888; }
+.ptt-picker select {
+  background: #0d0d1a;
+  color: #e0e0e0;
+  border: 1px solid #0f3460;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+button {
+  background: #0f3460;
+  color: #e0e0e0;
+  border: 1px solid #1a4a8a;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+button:hover { background: #1a4a8a; }
+
+.btn-primary {
+  background: #1a4a8a;
+  border-color: #2a5aaa;
+  padding: 6px 20px;
+  font-weight: 600;
+}
+.btn-primary:hover { background: #2a5aaa; }
+
+.btn-sm {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+#toggle-btn { flex-shrink: 0; }
+#toggle-btn.active { background: #c0392b; border-color: #e74c3c; }
+#toggle-btn.active:hover { background: #e74c3c; }
+
+#save-hotkey-btn { flex-shrink: 0; }
+
+/* Tab bar */
+#tab-bar {
+  display: flex;
+  background: #0d0d1a;
+  border-bottom: 1px solid #0f3460;
+}
+
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tab:hover { color: #b0bec5; background: rgba(255,255,255,0.03); }
+.tab.active { color: #4caf50; border-bottom-color: #4caf50; }
+
+/* Tab panels */
+.tab-panel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+.tab-panel.active { display: block; }
+
+/* Cards */
+.card {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+}
+
+.card h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+/* Fields */
+.field {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.field label {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #aaa;
+}
+
+.field select,
+.field input[type="text"],
+.field input[type="password"] {
+  flex: 1;
+  background: #0d0d1a;
+  color: #e0e0e0;
+  border: 1px solid #0f3460;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.field select:focus,
+.field input:focus { outline: none; border-color: #4caf50; }
+.field select { cursor: pointer; }
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+.field-row select { flex: 1; }
+
+.hint {
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+  flex: 1;
+}
+
+.install-instructions {
+  align-items: flex-start;
+  background: #0d0d1a;
+  border: 1px solid #0f3460;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 4px;
+}
+.install-instructions label { margin-top: 0; }
+.install-instructions > div { flex: 1; }
+
+.install-cmd {
+  display: block;
+  background: #111;
+  color: #4caf50;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.install-instructions a { color: #4caf50; text-decoration: underline; }
+.install-instructions code { color: #4caf50; font-size: 11px; }
+
+.status-msg {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.save-feedback {
+  font-size: 12px;
+  color: #4caf50;
+  margin-left: 8px;
+}
+
+.hidden { display: none; }
+
+/* Data tab */
+#data-status {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.data-stat {
+  background: #0d0d1a;
+  border: 1px solid #0f3460;
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+}
+.stat-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 4px;
+}
+.stat-value {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+#data-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+#data-progress {
+  background: #0d0d1a;
+  border: 1px solid #0f3460;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+#data-progress-text { color: #4caf50; }
+#data-progress-current { color: #888; font-style: italic; }
+
+/* Toggle checkbox */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #aaa;
+}
+.toggle input { width: auto; }
+
+/* Logs panel */
+#tab-logs.active {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+#log-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #0f3460;
+}
+#log-header h2 {
+  flex: 1;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin: 0;
+}
+
+#log-container {
+  flex: 1;
+  padding: 6px 12px;
+  overflow-y: auto;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.log-entry { padding: 2px 0; border-bottom: 1px solid rgba(15,52,96,0.3); word-break: break-word; }
+.log-entry.info { color: #b0bec5; }
+.log-entry.error { color: #ef5350; }
+
+.deemphasized-input {
+  opacity: 0.7;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.home-card h2 {
+  margin-top: 0;
+  font-size: 1.3rem;
+}
+
+.home-desc {
+  color: #aaa;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.home-recommendation {
+  background: #1a2a1a;
+  border: 1px solid #2a4a2a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.home-recommendation h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #4caf50;
+}
+
+.home-recommendation ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.home-recommendation li {
+  margin-bottom: 4px;
+  line-height: 1.4;
+  color: #ccc;
+}
+
+.home-status {
+  font-size: 0.9rem;
+  color: #888;
+}

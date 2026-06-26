@@ -212,6 +212,13 @@ function clearMemory() {
   db.prepare("DELETE FROM user_memory").run();
 }
 
+function searchHideout(query) {
+  const term = `%${query}%`;
+  return db.prepare(
+    "SELECT name, requirements FROM hideout_modules WHERE name LIKE ? LIMIT 5"
+  ).all(term);
+}
+
 // --- Queries ---
 
 function getStatus() {
@@ -293,4 +300,4 @@ function close() {
   if (db) { db.close(); db = null; }
 }
 
-module.exports = { init, insertItems, insertMaps, insertQuests, insertTraders, insertHideout, getStatus, fullTextSearch, clearAll, close, setMeta, getMeta, setMemory, getMemory, getAllMemory, deleteMemory, clearMemory };
+module.exports = { init, insertItems, insertMaps, insertQuests, insertTraders, insertHideout, getStatus, fullTextSearch, searchHideout, clearAll, close, setMeta, getMeta, setMemory, getMemory, getAllMemory, deleteMemory, clearMemory };

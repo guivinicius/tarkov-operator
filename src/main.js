@@ -38,6 +38,7 @@ function llmApiKey(s) {
 }
 
 function sttApiKey(s) {
+  if (s.STT_PROVIDER === "elevenlabs") return s.ELEVENLABS_API_KEY;
   return s.WHISPER_API_KEY || s.OPENAI_API_KEY || s.OPENROUTER_API_KEY;
 }
 
@@ -285,6 +286,12 @@ async function fetchSTTModels(provider) {
       { id: "small", name: "Small (~244MB, accurate)" },
       { id: "medium", name: "Medium (~769MB, very accurate)" },
       { id: "large", name: "Large (~1.5GB, most accurate)" },
+    ];
+  }
+  if (provider === "elevenlabs") {
+    return [
+      { id: "scribe_v2", name: "Scribe v2 (latest)" },
+      { id: "scribe_v1", name: "Scribe v1" },
     ];
   }
   return [];

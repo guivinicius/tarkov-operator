@@ -1,0 +1,37 @@
+{
+  "name": "tarkov-operator-desktop",
+  "version": "0.1.0",
+  "description": "Desktop companion for Escape from Tarkov — system tray operator with PTT",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "NODE_ENV=development electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build": "electron-builder --mac --win"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.tarkov-operator.desktop",
+    "productName": "Tarkov Operator",
+    "files": [
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

@@ -1,5 +1,4 @@
-// Text-to-speech via ElevenLabs API.
-// Fallback: platform-native TTS (say on macOS, SAPI on Windows).
+// Text-to-speech via ElevenLabs API, OpenRouter, or platform-native TTS.
 
 const { spawn, execSync } = require("child_process");
 const { platform } = require("os");
@@ -50,6 +49,48 @@ async function synthesizeElevenLabs(text, opts = {}) {
   });
 }
 
+async function synthesizeOpenRouter(text, opts = {}) {
+  const apiKey = opts.apiKey;
+  if (!apiKey) throw new Error("OpenRouter API key required for TTS");
+
+  const model = opts.model || "openai/gpt-4o-mini-tts-2025-12-15";
+  const voice = opts.voice || "alloy";
+
+  return new Promise((resolve, reject) => {
+    const reqBody = JSON.stringify({
+      model,
+      input: text,
+      voice,
+      response_format: "mp3",
+    });
+
+    const req = https.request(
+      {
+        hostname: "openrouter.ai",
+        path: "/api/v1/audio/speech",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Length": Buffer.byteLength(reqBody),
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          if (res.statusCode === 200) resolve(buffer);
+          else reject(new Error(`OpenRouter TTS error ${res.statusCode}: ${buffer.toString("utf-8").slice(0, 200)}`));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(reqBody);
+    req.end();
+  });
+}
+
 async function synthesizeLocal(text, opts = {}) {
   const voiceId = opts.voice || "";
   let tmpFile, format;
@@ -92,19 +133,25 @@ async function synthesizeLocal(text, opts = {}) {
 }
 
 async function synthesize(text, opts = {}) {
-  // Try ElevenLabs, fall back to local
-  const apiKey = opts.apiKey || process.env.ELEVENLABS_API_KEY;
-  if (apiKey && apiKey !== "***" && apiKey.trim()) {
-    try {
-      const t0 = performance.now();
-      const audio = await synthesizeElevenLabs(text, opts);
-      const latency = (performance.now() - t0) / 1000;
-      return { audio, format: "mp3", latency };
-    } catch (err) {
-      console.log(`[TTS] ElevenLabs failed: ${err.message}, using local fallback`);
-    }
+  const provider = opts.provider || "local";
+
+  if (provider === "openrouter") {
+    const t0 = performance.now();
+    const audio = await synthesizeOpenRouter(text, opts);
+    const latency = (performance.now() - t0) / 1000;
+    return { audio, format: "mp3", latency };
   }
 
+  if (provider === "elevenlabs") {
+    const apiKey = opts.apiKey;
+    if (!apiKey) throw new Error("ElevenLabs API key required for TTS");
+    const t0 = performance.now();
+    const audio = await synthesizeElevenLabs(text, opts);
+    const latency = (performance.now() - t0) / 1000;
+    return { audio, format: "mp3", latency };
+  }
+
+  // Local TTS (default + fallback)
   const t0 = performance.now();
   const localResult = await synthesizeLocal(text, opts);
   const latency = (performance.now() - t0) / 1000;

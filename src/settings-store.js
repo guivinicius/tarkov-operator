@@ -29,6 +29,7 @@ function getDefaults() {
     STT_MODEL: "whisper-1",
     TTS_PROVIDER: "local",
     TTS_VOICE: "",
+    TTS_MODEL: "",
     PTT_KEY: "F1",
   };
 }

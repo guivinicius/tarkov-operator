@@ -132,6 +132,7 @@
           <label>Provider</label>
           <select id="input-STT_PROVIDER">
             <option value="whisper-api">Whisper API</option>
+            <option value="openrouter">OpenRouter</option>
             <option value="elevenlabs">ElevenLabs</option>
             <option value="local">Local Whisper</option>
           </select>
@@ -161,9 +162,10 @@
           <select id="input-TTS_PROVIDER">
             <option value="local">Local (system TTS)</option>
             <option value="elevenlabs">ElevenLabs</option>
+            <option value="openrouter">OpenRouter</option>
           </select>
         </div>
-        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs">
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs,openrouter">
           <label>Voice</label>
           <div class="field-row">
             <select id="input-TTS_VOICE"></select>
@@ -171,7 +173,15 @@
             <span id="tts-voices-status" class="status-msg"></span>
           </div>
         </div>
-        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-not="elevenlabs">
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="openrouter">
+          <label>Model</label>
+          <div class="field-row">
+            <select id="input-TTS_MODEL"></select>
+            <button class="btn-sm" id="refresh-tts-models" title="Fetch models">⟳</button>
+            <span id="tts-models-status" class="status-msg"></span>
+          </div>
+        </div>
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-not="elevenlabs,openrouter">
           <label></label>
           <span class="hint">Using system default voice</span>
         </div>

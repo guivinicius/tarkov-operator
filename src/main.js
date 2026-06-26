@@ -39,6 +39,7 @@ function llmApiKey(s) {
 
 function sttApiKey(s) {
   if (s.STT_PROVIDER === "elevenlabs") return s.ELEVENLABS_API_KEY;
+  if (s.STT_PROVIDER === "openrouter") return s.OPENROUTER_API_KEY;
   return s.WHISPER_API_KEY || s.OPENAI_API_KEY || s.OPENROUTER_API_KEY;
 }
 
@@ -107,11 +108,16 @@ function processPipeline(audioBuffer) {
       return;
     }
 
-    log("info", `[tts] provider=${s.TTS_PROVIDER || "local"}, voice=${s.TTS_VOICE || "default"}`);
+    log("info", `[tts] provider=${s.TTS_PROVIDER || "local"}, voice=${s.TTS_VOICE || "default"}, model=${s.TTS_MODEL || "default"}`);
     const tTts = Date.now();
+    let ttsApiKey = "";
+    if (s.TTS_PROVIDER === "openrouter") ttsApiKey = s.OPENROUTER_API_KEY;
+    else if (s.TTS_PROVIDER === "elevenlabs") ttsApiKey = s.ELEVENLABS_API_KEY;
     const ttsResult = await tts.synthesize(llmResult.text, {
-      apiKey: s.ELEVENLABS_API_KEY,
+      provider: s.TTS_PROVIDER || "local",
+      apiKey: ttsApiKey,
       voice: s.TTS_VOICE || undefined,
+      model: s.TTS_MODEL || undefined,
     });
     log("info", `[tts] ${(Date.now() - tTts) / 1000}s, format=${ttsResult.format}`);
 
@@ -238,6 +244,26 @@ function fetchJSON(url, headers = {}) {
   });
 }
 
+async function fetchOpenRouterModels(outputModality, apiKey) {
+  try {
+    const data = await fetchJSON(
+      `https://openrouter.ai/api/v1/models?output_modalities=${outputModality}`,
+      apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
+    );
+    const models = data.data || [];
+    return models.map((m) => ({ id: m.id, name: m.name || m.id }));
+  } catch {
+    return [];
+  }
+}
+
+async function fetchTTSModels(provider, apiKey) {
+  if (provider === "openrouter") {
+    return fetchOpenRouterModels("speech", apiKey);
+  }
+  return [];
+}
+
 async function fetchLLMModels(provider, apiKey, baseURL) {
   switch (provider) {
     case "openrouter": {
@@ -275,7 +301,10 @@ async function fetchLLMModels(provider, apiKey, baseURL) {
   }
 }
 
-async function fetchSTTModels(provider) {
+async function fetchSTTModels(provider, apiKey) {
+  if (provider === "openrouter") {
+    return fetchOpenRouterModels("transcription", apiKey);
+  }
   if (provider === "whisper-api") {
     return [{ id: "whisper-1", name: "whisper-1 (OpenAI)" }];
   }
@@ -309,6 +338,19 @@ async function fetchTTSVoices(provider, apiKey) {
     } catch {
       return [];
     }
+  }
+  if (provider === "openrouter") {
+    return [
+      { id: "alloy", name: "Alloy (balanced, neutral)" },
+      { id: "echo", name: "Echo (deep, resonant)" },
+      { id: "fable", name: "Fable (British, warm)" },
+      { id: "nova", name: "Nova (female, clear)" },
+      { id: "shimmer", name: "Shimmer (warm, bright)" },
+      { id: "coral", name: "Coral (bright, energetic)" },
+      { id: "sage", name: "Sage (calm, gentle)" },
+      { id: "ash", name: "Ash (masculine, deep)" },
+      { id: "ballad", name: "Ballad (soft, melodic)" },
+    ];
   }
   return [];
 }
@@ -447,7 +489,8 @@ ipcMain.handle("update-settings", (_event, newSettings) => {
 ipcMain.handle("fetch-models", async (_event, category, provider, apiKey, baseURL) => {
   try {
     if (category === "llm") return await fetchLLMModels(provider, apiKey, baseURL);
-    if (category === "stt") return await fetchSTTModels(provider);
+    if (category === "stt") return await fetchSTTModels(provider, apiKey);
+    if (category === "tts") return await fetchTTSModels(provider, apiKey);
     return [];
   } catch (err) {
     return { error: err.message };

@@ -17,17 +17,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const llmModel = $("input-LLM_MODEL");
   const sttModel = $("input-STT_MODEL");
+  const ttsModel = $("input-TTS_MODEL");
   const ttsVoice = $("input-TTS_VOICE");
   const autoFetchData = $("input-AUTO_FETCH_DATA");
   const homeStatusText = $("home-status-text");
 
   const refreshLlm = $("refresh-llm-models");
   const refreshTts = $("refresh-tts-voices");
+  const refreshTtsModels = $("refresh-tts-models");
   const fetchDataBtn = $("fetch-data-btn");
   const clearDataBtn = $("clear-data-btn");
 
   const llmStatus = $("llm-models-status");
   const ttsStatus = $("tts-voices-status");
+  const ttsModelsStatus = $("tts-models-status");
   const dataProgress = $("data-progress");
   const dataProgressText = $("data-progress-text");
   const dataProgressCurrent = $("data-progress-current");
@@ -52,6 +55,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (tabId === "voice") {
       fetchAndPopulateModels("stt", sttProvider, sttModel, {});
       fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+      fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
     }
     if (tabId === "data") refreshDataStatus();
   }
@@ -69,8 +73,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       const depNot = el.getAttribute("data-dep-not");
       const actual = $(`input-${depends}`).value;
       let show = true;
-      if (depIs && actual !== depIs) show = false;
-      if (depNot && actual === depNot) show = false;
+      if (depIs) {
+        const accepted = depIs.split(",").map(v => v.trim());
+        if (!accepted.includes(actual)) show = false;
+      }
+      if (depNot) {
+        const rejected = depNot.split(",").map(v => v.trim());
+        if (rejected.includes(actual)) show = false;
+      }
       el.style.display = show ? "" : "none";
     });
   }
@@ -98,6 +108,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (category === "llm") {
       apiKey = settings[`${provider.toUpperCase()}_API_KEY`] || "";
     }
+    if (category === "tts" && provider === "openrouter") {
+      apiKey = settings.OPENROUTER_API_KEY;
+    }
 
     statusEl.textContent = "Loading...";
     const result = await window.operator.fetchModels(category, provider, apiKey, baseURL);
@@ -117,7 +130,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function fetchAndPopulateVoices(providerSelect, voiceSelect, statusEl) {
     const provider = providerSelect.value;
     const settings = await window.operator.getSettings();
-    const apiKey = settings.ELEVENLABS_API_KEY;
+    let apiKey = "";
+    if (provider === "elevenlabs") apiKey = settings.ELEVENLABS_API_KEY;
+    else if (provider === "openrouter") apiKey = settings.OPENROUTER_API_KEY;
 
     statusEl.textContent = "Loading...";
     const result = await window.operator.fetchVoices(provider, apiKey);
@@ -255,7 +270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // --- Init ---
 
-  [llmProvider, sttProvider, ttsProvider].forEach(updateFieldVisibility);
+  updateFieldVisibility();
   fetchAndPopulateModels("stt", sttProvider, sttModel, {});
   checkSox();
   refreshDataStatus();
@@ -297,12 +312,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   ttsProvider.addEventListener("change", () => {
     updateFieldVisibility();
     fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+    fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
   });
 
   // --- Refresh buttons ---
 
   refreshLlm.addEventListener("click", () => fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus));
   refreshTts.addEventListener("click", () => fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus));
+  refreshTtsModels.addEventListener("click", () => fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus));
 
   // --- Data actions ---
 
@@ -328,7 +345,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   $("save-voice-btn").addEventListener("click", async () => {
-    await saveSettings(["STT_PROVIDER", "STT_MODEL", "TTS_PROVIDER", "TTS_VOICE"]);
+    await saveSettings(["STT_PROVIDER", "STT_MODEL", "TTS_PROVIDER", "TTS_VOICE", "TTS_MODEL"]);
     const fb = $("save-voice-feedback");
     fb.classList.remove("hidden");
     setTimeout(() => fb.classList.add("hidden"), 2000);

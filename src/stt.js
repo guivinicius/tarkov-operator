@@ -1,4 +1,4 @@
-// Speech-to-text via OpenAI Whisper API, ElevenLabs, or local whisper.cpp subprocess.
+// Speech-to-text via OpenAI Whisper API, ElevenLabs, OpenRouter, or local whisper.cpp subprocess.
 
 const https = require("https");
 const OpenAI = require("openai");
@@ -34,6 +34,56 @@ async function transcribeWhisperAPI(audioBuffer, opts) {
   } finally {
     try { fs.unlinkSync(tmpFile); } catch {}
   }
+}
+
+async function transcribeOpenRouter(audioBuffer, opts) {
+  const apiKey = opts.apiKey;
+  if (!apiKey) throw new Error("OpenRouter API key required for STT");
+
+  const model = opts.model || "openai/whisper-1";
+  const base64 = audioBuffer.toString("base64");
+
+  const t0 = performance.now();
+  return new Promise((resolve, reject) => {
+    const reqBody = JSON.stringify({
+      model,
+      input_audio: { data: base64, format: "wav" },
+      language: "en",
+    });
+
+    const req = https.request(
+      {
+        hostname: "openrouter.ai",
+        path: "/api/v1/audio/transcriptions",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Length": Buffer.byteLength(reqBody),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (c) => { data += c; });
+        res.on("end", () => {
+          try {
+            if (res.statusCode >= 400) {
+              reject(new Error(`OpenRouter STT error ${res.statusCode}: ${data.slice(0, 200)}`));
+            } else {
+              const parsed = JSON.parse(data);
+              const latency = (performance.now() - t0) / 1000;
+              resolve({ text: (parsed.text || "").trim(), latency });
+            }
+          } catch (e) {
+            reject(new Error(`OpenRouter STT bad response: ${data.slice(0, 200)}`));
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(reqBody);
+    req.end();
+  });
 }
 
 async function transcribeElevenLabs(audioBuffer, opts) {
@@ -142,6 +192,10 @@ async function transcribeLocal(audioBuffer, opts) {
 async function transcribe(audioBuffer, opts = {}) {
   const provider = opts.provider || "whisper-api";
 
+  if (provider === "openrouter") {
+    return transcribeOpenRouter(audioBuffer, opts);
+  }
+
   if (provider === "elevenlabs") {
     return transcribeElevenLabs(audioBuffer, opts);
   }
@@ -152,7 +206,7 @@ async function transcribe(audioBuffer, opts = {}) {
 
   // Default: OpenAI Whisper API
   const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OpenAI/OpenRouter key required for STT (set provider to 'local' or 'elevenlabs')");
+  if (!apiKey) throw new Error("API key required for STT (set provider to 'local', 'elevenlabs', or 'openrouter')");
   return transcribeWhisperAPI(audioBuffer, opts);
 }
 

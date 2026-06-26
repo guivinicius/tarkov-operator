@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (tabId === "llm") fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus);
     if (tabId === "voice") {
       fetchAndPopulateModels("stt", sttProvider, sttModel, {});
-      if (ttsProvider.value === "elevenlabs") fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+      fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
     }
     if (tabId === "data") refreshDataStatus();
   }
@@ -296,7 +296,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   ttsProvider.addEventListener("change", () => {
     updateFieldVisibility();
-    if (ttsProvider.value === "elevenlabs") fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+    fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
   });
 
   // --- Refresh buttons ---

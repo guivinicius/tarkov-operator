@@ -126,7 +126,7 @@ function processPipeline(audioBuffer) {
     await audioPlayback.playBuffer(ttsResult.audio, ttsResult.format);
     log("info", "[play] Done");
   }).catch((err) => {
-    log("error", `[error] ${err.message}${err.stack ? "\\n" + err.stack : ""}`);
+    log("error", `[error] ${err.message}`);
   });
 }
 

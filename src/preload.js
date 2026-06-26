@@ -44,4 +44,9 @@ contextBridge.exposeInMainWorld("operator", {
     ipcRenderer.on("data-updated", h);
     return () => ipcRenderer.removeListener("data-updated", h);
   },
+
+  getMemory: () => ipcRenderer.invoke("get-memory"),
+  setMemory: (key, value) => ipcRenderer.invoke("set-memory", key, value),
+  deleteMemory: (key) => ipcRenderer.invoke("delete-memory", key),
+  clearMemory: () => ipcRenderer.invoke("clear-memory"),
 });

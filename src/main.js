@@ -15,7 +15,7 @@ const llm = require("./llm");
 const settingsStore = require("./settings-store");
 const dataStore = require("./data-store");
 const tarkovDev = require("./tarkov-dev");
-const rag = require("./rag");
+const agent = require("./agent");
 
 // --- State ----------------------------------------------------------------
 let tray = null;
@@ -76,34 +76,21 @@ function processPipeline(audioBuffer) {
     log("info", `[you] ${sttResult.text}`);
 
     // 2. LLM
-    // 2. RAG: search game data for relevant context
-    let ragContext = "";
-    try {
-      ragContext = await rag.search(sttResult.text);
-      if (ragContext) log("info", `[rag] Found context (${ragContext.length}B)`);
-    } catch (err) {
-      log("info", `[rag] ${err.message}`);
-    }
-
     log("info", `[llm] model=${s.LLM_MODEL}, provider=${s.LLM_PROVIDER}, base=${s.LLM_BASE_URL}`);
     log("info", `[llm] user="${sttResult.text}"`);
-    log("info", `[llm] rag_context=${ragContext ? ragContext.length + "B" : "none"}`);
     const tLlm = Date.now();
-    const llmResult = await llm.ask(sttResult.text, {
+    const agentResult = await agent.process(sttResult.text, {
       apiKey: llmApiKey(s),
       baseURL: s.LLM_BASE_URL,
       model: s.LLM_MODEL,
-      systemPromptAppend: ragContext,
+      systemPrompt: undefined, // agent.js uses default from llm.js
     });
-    const wordCount = llmResult.text ? llmResult.text.split(/\s+/).length : 0;
-    log("info", `[llm] ${(Date.now() - tLlm) / 1000}s, ${wordCount} words, finish=${llmResult.finishReason}, model=${llmResult.model}, pt=${llmResult.promptTokens} ct=${llmResult.completionTokens}`);
-    if (llmResult.raw && llmResult.raw.trim() !== llmResult.raw) {
-      log("info", `[llm] raw="${llmResult.raw.replace(/\n/g, "\\n").slice(0, 300)}"`);
-    }
-    log("info", `[op] ${llmResult.text}`);
+    const wordCount = agentResult.text ? agentResult.text.split(/\s+/).length : 0;
+    log("info", `[llm] ${(Date.now() - tLlm) / 1000}s, ${wordCount} words, model=${agentResult.model}, pt=${agentResult.promptTokens} ct=${agentResult.completionTokens}`);
+    log("info", `[op] ${agentResult.text}`);
 
     // 3. TTS (skip if empty response)
-    if (!llmResult.text) {
+    if (!agentResult.text) {
       log("info", "[tts] Empty response, skipping TTS");
       return;
     }
@@ -113,7 +100,7 @@ function processPipeline(audioBuffer) {
     let ttsApiKey = "";
     if (s.TTS_PROVIDER === "openrouter") ttsApiKey = s.OPENROUTER_API_KEY;
     else if (s.TTS_PROVIDER === "elevenlabs") ttsApiKey = s.ELEVENLABS_API_KEY;
-    const ttsResult = await tts.synthesize(llmResult.text, {
+    const ttsResult = await tts.synthesize(agentResult.text, {
       provider: s.TTS_PROVIDER || "local",
       apiKey: ttsApiKey,
       voice: s.TTS_VOICE || undefined,
@@ -552,6 +539,26 @@ ipcMain.handle("clear-game-data", () => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+ipcMain.handle("get-memory", () => {
+  try { return dataStore.getAllMemory(); }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("set-memory", (_event, key, value) => {
+  try { dataStore.setMemory(key, value); return { ok: true }; }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("delete-memory", (_event, key) => {
+  try { dataStore.deleteMemory(key); return { ok: true }; }
+  catch (err) { return { error: err.message }; }
+});
+
+ipcMain.handle("clear-memory", () => {
+  try { dataStore.clearMemory(); return { ok: true }; }
+  catch (err) { return { error: err.message }; }
 });
 
 ipcMain.handle("check-dependency", async (_event, name) => {

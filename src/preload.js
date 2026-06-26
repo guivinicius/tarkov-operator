@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld("operator", {
     return () => ipcRenderer.removeListener("status-changed", h);
   },
 
+  newSession: () => ipcRenderer.invoke("new-session"),
+
   getDataStatus: () => ipcRenderer.invoke("get-data-status"),
   fetchGameData: (onProgress) => {
     const h = (_e, stage) => onProgress(stage);

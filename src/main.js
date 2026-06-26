@@ -505,6 +505,12 @@ ipcMain.handle("fetch-voices", async (_event, provider, apiKey) => {
   }
 });
 
+ipcMain.handle("new-session", () => {
+  llm.newSession();
+  log("info", "[session] Conversation history cleared");
+  return { ok: true };
+});
+
 ipcMain.handle("get-data-status", () => {
   try {
     return dataStore.getStatus();

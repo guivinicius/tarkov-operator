@@ -2,6 +2,8 @@
 
 const OpenAI = require("openai");
 
+const conversationHistory = [];
+
 const SYSTEM_PROMPT = `You are an operations center operator supporting an Operator on the ground in Tarkov. Short, precise, tactical.
 
 RULES:
@@ -28,6 +30,10 @@ function getClient(apiKey, baseURL) {
   });
 }
 
+function newSession() {
+  conversationHistory.length = 0;
+}
+
 async function ask(userMessage, opts = {}) {
   const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY || "ollama";
   const isLocal = !opts.apiKey && (!opts.baseURL || opts.baseURL.includes("localhost"));
@@ -41,13 +47,16 @@ async function ask(userMessage, opts = {}) {
     systemContent += "\n\n" + opts.systemPromptAppend;
   }
 
+  const messages = [
+    { role: "system", content: systemContent },
+    ...conversationHistory,
+    { role: "user", content: userMessage },
+  ];
+
   const t0 = performance.now();
   const response = await client.chat.completions.create({
     model,
-    messages: [
-      { role: "system", content: systemContent },
-      { role: "user", content: userMessage },
-    ],
+    messages,
     max_tokens: 500,
     temperature: 0.7,
   });
@@ -58,7 +67,16 @@ async function ask(userMessage, opts = {}) {
   const text = rawContent.trim();
   const usage = response.usage || {};
 
-  // Log raw response for debugging (visible in DevTools console)
+  conversationHistory.push(
+    { role: "user", content: userMessage },
+    { role: "assistant", content: text },
+  );
+
+  // Keep last 15 exchanges to stay within context window
+  if (conversationHistory.length > 30) {
+    conversationHistory.splice(0, conversationHistory.length - 30);
+  }
+
   console.log(`[llm-raw] finish=${choice?.finish_reason} pt=${usage.prompt_tokens} ct=${usage.completion_tokens}`);
   console.log(`[llm-raw] content="${rawContent.replace(/\n/g, "\\n").slice(0, 500)}"`);
 
@@ -73,4 +91,4 @@ async function ask(userMessage, opts = {}) {
   };
 }
 
-module.exports = { ask };
+module.exports = { ask, newSession };

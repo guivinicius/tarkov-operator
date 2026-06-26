@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const refreshLlm = $("refresh-llm-models");
   const refreshTts = $("refresh-tts-voices");
   const refreshTtsModels = $("refresh-tts-models");
+  const newSessionBtn = $("new-session-btn");
+  const sessionInfo = $("session-info");
   const fetchDataBtn = $("fetch-data-btn");
   const clearDataBtn = $("clear-data-btn");
 
@@ -365,6 +367,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   refreshLlm.addEventListener("click", () => fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus));
   refreshTts.addEventListener("click", () => fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus));
   refreshTtsModels.addEventListener("click", () => fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus));
+
+  newSessionBtn.addEventListener("click", async () => {
+    await window.operator.newSession();
+    exchangeCount = 0;
+    sessionInfo.textContent = "New session started";
+    setTimeout(() => { sessionInfo.textContent = "0 exchanges"; }, 2000);
+  });
+
+  let exchangeCount = 0;
+  window.operator.onLog((entry) => {
+    if (entry.message.startsWith("[op]")) {
+      exchangeCount++;
+      sessionInfo.textContent = `${exchangeCount} exchange${exchangeCount !== 1 ? "s" : ""}`;
+    }
+  });
 
   // --- Data actions ---
 

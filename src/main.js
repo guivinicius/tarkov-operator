@@ -329,8 +329,7 @@ async function fetchSTTModels(provider, apiKey) {
 async function fetchTTSVoices(provider, apiKey) {
   if (provider === "elevenlabs") {
     try {
-      const headers = apiKey ? { "xi-api-key": apiKey } : {};
-      const data = await fetchJSON("https://api.elevenlabs.io/v1/voices", headers);
+      const data = await fetchJSON("https://api.elevenlabs.io/v1/voices", {});
       return (data.voices || []).map((v) => ({
         id: v.voice_id,
         name: v.name,

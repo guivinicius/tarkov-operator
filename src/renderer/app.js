@@ -54,8 +54,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (tabId === "llm") fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus);
     if (tabId === "voice") {
       fetchAndPopulateModels("stt", sttProvider, sttModel, {});
-      fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
       fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
+      fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
     }
     if (tabId === "data") refreshDataStatus();
   }
@@ -131,8 +131,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const provider = providerSelect.value;
     const settings = await window.operator.getSettings();
     let apiKey = "";
-    if (provider === "elevenlabs") apiKey = settings.ELEVENLABS_API_KEY;
-    else if (provider === "openrouter") apiKey = settings.OPENROUTER_API_KEY;
+    if (provider === "openrouter") apiKey = settings.OPENROUTER_API_KEY;
 
     statusEl.textContent = "Loading...";
     const result = await window.operator.fetchVoices(provider, apiKey);
@@ -170,8 +169,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!el) continue;
       if (el.tagName === "SELECT" || el.type !== "password") {
         data[key] = el.value;
-      } else if (el.value) {
-        data[key] = el.value;
+      } else {
+        const orig = el.dataset.originalValue || "";
+        if (el.value !== orig) data[key] = el.value;
       }
     }
     await window.operator.updateSettings(data);
@@ -259,8 +259,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   for (const [key, value] of Object.entries(settings)) {
     const el = $(`input-${key}`);
     if (!el) continue;
-    if (el.type === "password" && value) {
-      el.placeholder = "••••••••••••••••";
+    if (el.type === "password") {
+      el.dataset.originalValue = value || "";
+      if (value) {
+        el.placeholder = "••••••••••••••••";
+      }
     } else if (el.type === "checkbox") {
       el.checked = value !== false;
     } else {
@@ -311,8 +314,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   ttsProvider.addEventListener("change", () => {
     updateFieldVisibility();
-    fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
     fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
+    fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
   });
 
   // --- Refresh buttons ---

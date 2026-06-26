@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <title>Tarkov Operator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Status bar -->
+    <div id="status-bar">
+      <span id="status-indicator" class="indicator idle"></span>
+      <span id="status-text">Idle</span>
+      <div class="ptt-picker">
+        <label>PTT</label>
+        <select id="input-PTT_KEY">
+          <option value="F1">F1</option>
+          <option value="F2">F2</option>
+          <option value="F3">F3</option>
+          <option value="F4">F4</option>
+          <option value="F5">F5</option>
+          <option value="F6">F6</option>
+          <option value="F7">F7</option>
+          <option value="F8">F8</option>
+          <option value="F9">F9</option>
+          <option value="F10">F10</option>
+          <option value="F11">F11</option>
+          <option value="F12">F12</option>
+        </select>
+      </div>
+      <button id="toggle-btn">Enable Operator</button>
+    </div>
+
+    <!-- Tab bar -->
+    <div id="tab-bar">
+      <button class="tab active" data-tab="home">Home</button>
+      <button class="tab" data-tab="providers">Providers</button>
+      <button class="tab" data-tab="llm">LLM</button>
+      <button class="tab" data-tab="voice">Voice</button>
+      <button class="tab" data-tab="data">Data</button>
+      <button class="tab" data-tab="system">System</button>
+      <button class="tab" data-tab="logs">Logs</button>
+    </div>
+
+    <!-- Tab: Home -->
+    <div id="tab-home" class="tab-panel active">
+      <div class="card home-card">
+        <h2>Welcome to Tarkov Operator</h2>
+        <p class="home-desc">
+          Configure your API keys in the <strong>Providers</strong> tab, then select models in <strong>LLM</strong> and <strong>Voice</strong>.
+        </p>
+        <div class="home-recommendation">
+          <h3>For best quality</h3>
+          <ul>
+            <li><strong>STT:</strong> Whisper API (set OpenAI or OpenRouter key)</li>
+            <li><strong>LLM:</strong> Claude via OpenRouter (set OpenRouter key)</li>
+            <li><strong>TTS:</strong> ElevenLabs (set ElevenLabs key)</li>
+          </ul>
+        </div>
+        <div class="home-status">
+          <span id="home-status-text">Checking...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Providers -->
+    <div id="tab-providers" class="tab-panel">
+      <div class="card">
+        <h2>API Keys</h2>
+        <div class="field">
+          <label>OpenRouter</label>
+          <input type="password" id="input-OPENROUTER_API_KEY" placeholder="sk-or-...">
+        </div>
+        <div class="field">
+          <label>OpenAI</label>
+          <input type="password" id="input-OPENAI_API_KEY" placeholder="sk-...">
+        </div>
+        <div class="field">
+          <label>Anthropic</label>
+          <input type="password" id="input-ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+        </div>
+        <div class="field">
+          <label>ElevenLabs</label>
+          <input type="password" id="input-ELEVENLABS_API_KEY" placeholder="Optional — for TTS">
+        </div>
+        <div class="field">
+          <label>Whisper API</label>
+          <input type="password" id="input-WHISPER_API_KEY" placeholder="Leave blank to use OpenAI/OpenRouter key">
+        </div>
+        <button id="save-providers-btn" class="btn-primary">Save Providers</button>
+        <span id="save-providers-feedback" class="hidden save-feedback">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Tab: LLM -->
+    <div id="tab-llm" class="tab-panel">
+      <div class="card">
+        <div class="field">
+          <label>Provider</label>
+          <select id="input-LLM_PROVIDER">
+            <option value="openrouter">OpenRouter</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="ollama">Ollama (local)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Base URL</label>
+          <input type="text" id="input-LLM_BASE_URL" class="deemphasized-input">
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <div class="field-row">
+            <select id="input-LLM_MODEL"></select>
+            <button class="btn-sm" id="refresh-llm-models" title="Fetch models">⟳</button>
+            <span id="llm-models-status" class="status-msg"></span>
+          </div>
+        </div>
+        <button id="save-llm-btn" class="btn-primary">Save LLM</button>
+        <span id="save-llm-feedback" class="hidden save-feedback">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Tab: Voice -->
+    <div id="tab-voice" class="tab-panel">
+      <div class="card">
+        <h2>Speech-to-Text</h2>
+        <div class="field">
+          <label>Provider</label>
+          <select id="input-STT_PROVIDER">
+            <option value="whisper-api">Whisper API</option>
+            <option value="local">Local Whisper</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <select id="input-STT_MODEL"></select>
+        </div>
+        <div class="field install-instructions" data-depends-on="STT_PROVIDER" data-dep-is="local">
+          <label></label>
+          <div>
+            <p class="hint" style="margin-bottom:4px;font-style:normal;color:#aaa">
+              Local Whisper requires <code>openai-whisper</code> (Python):
+            </p>
+            <code class="install-cmd" id="local-stt-cmd">pip install openai-whisper</code>
+            <p class="hint" style="margin-top:4px;font-style:normal;color:#666">
+              Or build <a href="https://github.com/ggerganov/whisper.cpp" target="_blank" style="color:#4caf50">whisper.cpp</a>
+              and ensure the <code>whisper</code> binary is on your PATH.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Text-to-Speech</h2>
+        <div class="field">
+          <label>Provider</label>
+          <select id="input-TTS_PROVIDER">
+            <option value="local">Local (system TTS)</option>
+            <option value="elevenlabs">ElevenLabs</option>
+          </select>
+        </div>
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs">
+          <label>Voice</label>
+          <div class="field-row">
+            <select id="input-TTS_VOICE"></select>
+            <button class="btn-sm" id="refresh-tts-voices" title="Fetch voices">⟳</button>
+            <span id="tts-voices-status" class="status-msg"></span>
+          </div>
+        </div>
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-not="elevenlabs">
+          <label></label>
+          <span class="hint">Using system default voice</span>
+        </div>
+        <button id="save-voice-btn" class="btn-primary">Save Voice</button>
+        <span id="save-voice-feedback" class="hidden save-feedback">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Tab: Data -->
+    <div id="tab-data" class="tab-panel">
+      <div class="card">
+        <h2>Game Data Cache</h2>
+        <div id="data-status">
+          <div class="data-stat"><span class="stat-label">Items</span><span id="data-items" class="stat-value">—</span></div>
+          <div class="data-stat"><span class="stat-label">Maps</span><span id="data-maps" class="stat-value">—</span></div>
+          <div class="data-stat"><span class="stat-label">Quests</span><span id="data-quests" class="stat-value">—</span></div>
+          <div class="data-stat"><span class="stat-label">Traders</span><span id="data-traders" class="stat-value">—</span></div>
+          <div class="data-stat"><span class="stat-label">Hideout</span><span id="data-hideout" class="stat-value">—</span></div>
+          <div class="data-stat"><span class="stat-label">Last fetch</span><span id="data-last-fetch" class="stat-value">never</span></div>
+        </div>
+        <div id="data-actions">
+          <button id="fetch-data-btn" class="btn-primary">Fetch All</button>
+          <button id="clear-data-btn" class="btn-sm">Clear Cache</button>
+        </div>
+        <div id="data-progress" class="hidden">
+          <span id="data-progress-text">Fetching...</span>
+          <span id="data-progress-current"></span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:0">
+        <h2>RAG Context</h2>
+        <p class="hint" style="margin-bottom:6px">
+          Game data is injected into the LLM prompt as context when your question matches items, maps, or quests.
+        </p>
+        <div class="field">
+          <label>Auto-fetch</label>
+          <label class="toggle">
+            <input type="checkbox" id="input-AUTO_FETCH_DATA" checked>
+            <span>On startup</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: System -->
+    <div id="tab-system" class="tab-panel">
+      <div class="card">
+        <h2>Dependencies</h2>
+        <div class="field" id="sox-dependency">
+          <label>SoX (mic capture)</label>
+          <div class="field-row">
+            <span id="sox-status" class="status-msg">Checking...</span>
+            <button class="btn-sm" id="check-sox-btn">Check</button>
+            <button class="btn-sm" id="install-sox-btn" style="display:none">Install</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Logs -->
+    <div id="tab-logs" class="tab-panel">
+      <div id="log-header">
+        <h2>Logs</h2>
+        <button id="clear-logs-btn" class="btn-sm">Clear</button>
+      </div>
+      <div id="log-container"></div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

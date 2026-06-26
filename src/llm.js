@@ -54,23 +54,47 @@ async function ask(userMessage, opts = {}) {
   ];
 
   const t0 = performance.now();
-  const response = await client.chat.completions.create({
+  const completionOpts = {
     model,
     messages,
     max_tokens: 500,
     temperature: 0.7,
-  });
+  };
+
+  if (opts.tools && opts.tools.length > 0) {
+    completionOpts.tools = opts.tools;
+    completionOpts.tool_choice = "auto";
+  }
+
+  const response = await client.chat.completions.create(completionOpts);
 
   const latency = (performance.now() - t0) / 1000;
   const choice = response.choices?.[0];
   const rawContent = choice?.message?.content || "";
   const text = rawContent.trim();
+  const toolCalls = choice?.message?.tool_calls || null;
+  const finishReason = choice?.finish_reason || "unknown";
   const usage = response.usage || {};
 
-  conversationHistory.push(
-    { role: "user", content: userMessage },
-    { role: "assistant", content: text },
-  );
+  if (toolCalls && toolCalls.length > 0) {
+    conversationHistory.push({
+      role: "assistant",
+      content: rawContent,
+      tool_calls: toolCalls.map((tc) => ({
+        id: tc.id,
+        type: "function",
+        function: {
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        },
+      })),
+    });
+  } else {
+    conversationHistory.push(
+      { role: "user", content: userMessage },
+      { role: "assistant", content: text },
+    );
+  }
 
   // Keep last 15 exchanges to stay within context window
   if (conversationHistory.length > 30) {
@@ -84,11 +108,20 @@ async function ask(userMessage, opts = {}) {
     text,
     raw: rawContent,
     latency,
-    finishReason: choice?.finish_reason || "unknown",
+    finishReason,
+    toolCalls,
     model: response.model || model,
     promptTokens: usage.prompt_tokens || 0,
     completionTokens: usage.completion_tokens || 0,
   };
 }
 
-module.exports = { ask, newSession };
+function pushToolResult(toolCallId, content) {
+  conversationHistory.push({
+    role: "tool",
+    content,
+    tool_call_id: toolCallId,
+  });
+}
+
+module.exports = { ask, newSession, pushToolResult };

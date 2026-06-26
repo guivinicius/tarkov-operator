@@ -355,3 +355,48 @@ button:hover { background: #1a4a8a; }
   font-size: 0.9rem;
   color: #888;
 }
+
+/* Memory tab */
+#memory-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#memory-table th {
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  color: #888;
+  border-bottom: 1px solid #333;
+}
+
+#memory-table td {
+  padding: 4px 8px;
+  vertical-align: middle;
+}
+
+.memory-edit-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #444;
+  color: #ddd;
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 2px 4px;
+}
+
+.memory-edit-input:focus {
+  border-bottom-color: #4caf50;
+  outline: none;
+}
+
+.memory-time {
+  font-size: 0.75rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+#memory-empty {
+  text-align: center;
+  padding: 20px;
+}

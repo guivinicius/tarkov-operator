@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
     }
     if (tabId === "data") refreshDataStatus();
+    if (tabId === "memory") refreshMemory();
   }
 
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -193,6 +194,58 @@ document.addEventListener("DOMContentLoaded", async () => {
     dataStats.lastFetch.textContent = status.lastFetch
       ? new Date(status.lastFetch).toLocaleString()
       : "never";
+  }
+
+  async function refreshMemory() {
+    const data = await window.operator.getMemory();
+    const tbody = document.getElementById("memory-body");
+    const empty = document.getElementById("memory-empty");
+    const actions = document.getElementById("memory-actions");
+    tbody.innerHTML = "";
+    if (data.error || !data.length) {
+      tbody.innerHTML = "";
+      empty.style.display = "";
+      actions.style.display = "none";
+      return;
+    }
+    empty.style.display = "none";
+    actions.style.display = "";
+    for (const row of data) {
+      const tr = document.createElement("tr");
+      const keyTd = document.createElement("td");
+      keyTd.textContent = row.key;
+      const valTd = document.createElement("td");
+      const valInput = document.createElement("input");
+      valInput.type = "text";
+      valInput.value = row.value;
+      valInput.className = "memory-edit-input";
+      valInput.dataset.key = row.key;
+      valInput.dataset.originalValue = row.value;
+      valInput.addEventListener("change", async () => {
+        if (valInput.value !== valInput.dataset.originalValue) {
+          await window.operator.setMemory(row.key, valInput.value);
+          valInput.dataset.originalValue = valInput.value;
+        }
+      });
+      valTd.appendChild(valInput);
+      const timeTd = document.createElement("td");
+      timeTd.className = "memory-time";
+      timeTd.textContent = row.updated_at ? new Date(row.updated_at + "Z").toLocaleString() : "";
+      const delTd = document.createElement("td");
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn-sm";
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", async () => {
+        await window.operator.deleteMemory(row.key);
+        refreshMemory();
+      });
+      delTd.appendChild(delBtn);
+      tr.appendChild(keyTd);
+      tr.appendChild(valTd);
+      tr.appendChild(timeTd);
+      tr.appendChild(delTd);
+      tbody.appendChild(tr);
+    }
   }
 
   async function refreshHomeStatus() {
@@ -394,6 +447,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   autoFetchData.addEventListener("change", async () => {
     await saveSettings(["AUTO_FETCH_DATA"]);
+  });
+
+  document.getElementById("clear-memory-btn").addEventListener("click", async () => {
+    await window.operator.clearMemory();
+    refreshMemory();
   });
 
   const pttKeySelect = $("input-PTT_KEY");

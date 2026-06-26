@@ -42,6 +42,7 @@
       <button class="tab" data-tab="voice">Voice</button>
       <button class="tab" data-tab="data">Data</button>
       <button class="tab" data-tab="system">System</button>
+      <button class="tab" data-tab="memory">Memory</button>
       <button class="tab" data-tab="logs">Logs</button>
     </div>
 
@@ -251,6 +252,27 @@
         <button id="clear-logs-btn" class="btn-sm">Clear</button>
       </div>
       <div id="log-container"></div>
+    </div>
+
+    <!-- Tab: Memory -->
+    <div id="tab-memory" class="tab-panel">
+      <div class="card">
+        <h2>User Memory</h2>
+        <p class="hint" style="margin-bottom:8px">
+          Persistent facts the agent remembers about you. Edit or delete as needed.
+          The agent uses these facts to personalize responses.
+        </p>
+        <table id="memory-table">
+          <thead>
+            <tr><th>Key</th><th>Value</th><th>Saved</th><th></th></tr>
+          </thead>
+          <tbody id="memory-body"></tbody>
+        </table>
+        <div id="memory-empty" class="hint">No facts saved yet. Ask the operator to remember something.</div>
+        <div id="memory-actions" style="margin-top:8px">
+          <button id="clear-memory-btn" class="btn-sm">Clear All</button>
+        </div>
+      </div>
     </div>
   </div>
   <script src="app.js"></script>

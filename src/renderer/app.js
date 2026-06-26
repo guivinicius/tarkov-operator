@@ -295,6 +295,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       v === "openrouter" ? "https://openrouter.ai/api/v1" :
       v === "openai" ? "https://api.openai.com/v1" :
       v === "anthropic" ? "https://api.anthropic.com/v1" : "";
+    saveSettings(["LLM_PROVIDER", "LLM_BASE_URL"]);
+    refreshHomeStatus();
   });
 
   function updateLocalSttCommand() {
@@ -310,13 +312,49 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateFieldVisibility();
     fetchAndPopulateModels("stt", sttProvider, sttModel, {});
     updateLocalSttCommand();
+    saveSettings(["STT_PROVIDER", "STT_MODEL"]);
+    refreshHomeStatus();
+  });
+
+  sttModel.addEventListener("change", () => {
+    saveSettings(["STT_MODEL"]);
   });
 
   ttsProvider.addEventListener("change", () => {
     updateFieldVisibility();
     fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
     fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+    saveSettings(["TTS_PROVIDER", "TTS_VOICE", "TTS_MODEL"]);
+    refreshHomeStatus();
   });
+
+  ttsModel.addEventListener("change", () => {
+    fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+    saveSettings(["TTS_MODEL"]);
+  });
+
+  ttsVoice.addEventListener("change", () => {
+    saveSettings(["TTS_VOICE"]);
+  });
+
+  $("input-LLM_BASE_URL").addEventListener("change", () => {
+    saveSettings(["LLM_BASE_URL"]);
+  });
+
+  llmModel.addEventListener("change", () => {
+    saveSettings(["LLM_MODEL"]);
+  });
+
+  // Auto-save password fields on blur
+  for (const key of ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "WHISPER_API_KEY"]) {
+    const el = $(`input-${key}`);
+    if (el) {
+      el.addEventListener("blur", () => {
+        saveSettings([key]);
+        refreshHomeStatus();
+      });
+    }
+  }
 
   // --- Refresh buttons ---
 
@@ -335,38 +373,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   autoFetchData.addEventListener("change", async () => {
     await saveSettings(["AUTO_FETCH_DATA"]);
-  });
-
-  // --- Save buttons ---
-
-  $("save-llm-btn").addEventListener("click", async () => {
-    await saveSettings(["LLM_PROVIDER", "LLM_BASE_URL", "LLM_MODEL"]);
-    const fb = $("save-llm-feedback");
-    fb.classList.remove("hidden");
-    setTimeout(() => fb.classList.add("hidden"), 2000);
-    refreshHomeStatus();
-  });
-
-  $("save-voice-btn").addEventListener("click", async () => {
-    await saveSettings(["STT_PROVIDER", "STT_MODEL", "TTS_PROVIDER", "TTS_VOICE", "TTS_MODEL"]);
-    const fb = $("save-voice-feedback");
-    fb.classList.remove("hidden");
-    setTimeout(() => fb.classList.add("hidden"), 2000);
-    refreshHomeStatus();
-  });
-
-  $("save-providers-btn").addEventListener("click", async () => {
-    await saveSettings([
-      "OPENROUTER_API_KEY",
-      "OPENAI_API_KEY",
-      "ANTHROPIC_API_KEY",
-      "ELEVENLABS_API_KEY",
-      "WHISPER_API_KEY",
-    ]);
-    const fb = $("save-providers-feedback");
-    fb.classList.remove("hidden");
-    setTimeout(() => fb.classList.add("hidden"), 2000);
-    refreshHomeStatus();
   });
 
   const pttKeySelect = $("input-PTT_KEY");

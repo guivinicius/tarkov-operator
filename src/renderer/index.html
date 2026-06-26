@@ -90,8 +90,6 @@
           <label>Whisper API</label>
           <input type="password" id="input-WHISPER_API_KEY" placeholder="Leave blank to use OpenAI/OpenRouter key">
         </div>
-        <button id="save-providers-btn" class="btn-primary">Save Providers</button>
-        <span id="save-providers-feedback" class="hidden save-feedback">Saved!</span>
       </div>
     </div>
 
@@ -119,8 +117,6 @@
             <span id="llm-models-status" class="status-msg"></span>
           </div>
         </div>
-        <button id="save-llm-btn" class="btn-primary">Save LLM</button>
-        <span id="save-llm-feedback" class="hidden save-feedback">Saved!</span>
       </div>
     </div>
 
@@ -165,14 +161,6 @@
             <option value="openrouter">OpenRouter</option>
           </select>
         </div>
-        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs,openrouter">
-          <label>Voice</label>
-          <div class="field-row">
-            <select id="input-TTS_VOICE"></select>
-            <button class="btn-sm" id="refresh-tts-voices" title="Fetch voices">⟳</button>
-            <span id="tts-voices-status" class="status-msg"></span>
-          </div>
-        </div>
         <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="openrouter">
           <label>Model</label>
           <div class="field-row">
@@ -181,12 +169,18 @@
             <span id="tts-models-status" class="status-msg"></span>
           </div>
         </div>
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs,openrouter">
+          <label>Voice</label>
+          <div class="field-row">
+            <select id="input-TTS_VOICE"></select>
+            <button class="btn-sm" id="refresh-tts-voices" title="Fetch voices">⟳</button>
+            <span id="tts-voices-status" class="status-msg"></span>
+          </div>
+        </div>
         <div class="field" data-depends-on="TTS_PROVIDER" data-dep-not="elevenlabs,openrouter">
           <label></label>
           <span class="hint">Using system default voice</span>
         </div>
-        <button id="save-voice-btn" class="btn-primary">Save Voice</button>
-        <span id="save-voice-feedback" class="hidden save-feedback">Saved!</span>
       </div>
     </div>
 

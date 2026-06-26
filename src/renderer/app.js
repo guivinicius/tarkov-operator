@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // --- Provider changes ---
 
-  llmProvider.addEventListener("change", () => {
+  llmProvider.addEventListener("change", async () => {
     updateFieldVisibility();
     const v = llmProvider.value;
     $("input-LLM_BASE_URL").value =
@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       v === "openrouter" ? "https://openrouter.ai/api/v1" :
       v === "openai" ? "https://api.openai.com/v1" :
       v === "anthropic" ? "https://api.anthropic.com/v1" : "";
-    saveSettings(["LLM_PROVIDER", "LLM_BASE_URL"]);
+    await saveSettings(["LLM_PROVIDER", "LLM_BASE_URL"]);
     refreshHomeStatus();
   });
 
@@ -308,50 +308,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     else el.textContent = "pip3 install openai-whisper";
   }
 
-  sttProvider.addEventListener("change", () => {
+  sttProvider.addEventListener("change", async () => {
     updateFieldVisibility();
-    fetchAndPopulateModels("stt", sttProvider, sttModel, {});
+    await fetchAndPopulateModels("stt", sttProvider, sttModel, {});
     updateLocalSttCommand();
-    saveSettings(["STT_PROVIDER", "STT_MODEL"]);
+    await saveSettings(["STT_PROVIDER", "STT_MODEL"]);
     refreshHomeStatus();
   });
 
-  sttModel.addEventListener("change", () => {
-    saveSettings(["STT_MODEL"]);
+  sttModel.addEventListener("change", async () => {
+    await saveSettings(["STT_MODEL"]);
   });
 
-  ttsProvider.addEventListener("change", () => {
+  ttsProvider.addEventListener("change", async () => {
     updateFieldVisibility();
-    fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
-    fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
-    saveSettings(["TTS_PROVIDER", "TTS_VOICE", "TTS_MODEL"]);
+    await fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
+    await fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+    await saveSettings(["TTS_PROVIDER", "TTS_VOICE", "TTS_MODEL"]);
     refreshHomeStatus();
   });
 
-  ttsModel.addEventListener("change", () => {
-    fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
-    saveSettings(["TTS_MODEL"]);
+  ttsModel.addEventListener("change", async () => {
+    await fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
+    await saveSettings(["TTS_MODEL"]);
   });
 
-  ttsVoice.addEventListener("change", () => {
-    saveSettings(["TTS_VOICE"]);
+  ttsVoice.addEventListener("change", async () => {
+    await saveSettings(["TTS_VOICE"]);
   });
 
-  $("input-LLM_BASE_URL").addEventListener("change", () => {
-    saveSettings(["LLM_BASE_URL"]);
+  $("input-LLM_BASE_URL").addEventListener("change", async () => {
+    await saveSettings(["LLM_BASE_URL"]);
   });
 
-  llmModel.addEventListener("change", () => {
-    saveSettings(["LLM_MODEL"]);
+  llmModel.addEventListener("change", async () => {
+    await saveSettings(["LLM_MODEL"]);
   });
 
-  // Auto-save password fields on blur
+  // Auto-save password fields on blur (only if user actually typed)
   for (const key of ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "WHISPER_API_KEY"]) {
     const el = $(`input-${key}`);
     if (el) {
-      el.addEventListener("blur", () => {
-        saveSettings([key]);
-        refreshHomeStatus();
+      el.addEventListener("input", () => { el.dataset.modified = "true"; });
+      el.addEventListener("blur", async () => {
+        if (el.dataset.modified) {
+          await saveSettings([key]);
+          refreshHomeStatus();
+          delete el.dataset.modified;
+        }
       });
     }
   }

@@ -83,7 +83,6 @@ function processPipeline(audioBuffer) {
       apiKey: llmApiKey(s),
       baseURL: s.LLM_BASE_URL,
       model: s.LLM_MODEL,
-      systemPrompt: undefined, // agent.js uses default from llm.js
     });
     const wordCount = agentResult.text ? agentResult.text.split(/\s+/).length : 0;
     log("info", `[llm] ${(Date.now() - tLlm) / 1000}s, ${wordCount} words, model=${agentResult.model}, pt=${agentResult.promptTokens} ct=${agentResult.completionTokens}`);

@@ -2,13 +2,13 @@ const llm = require("./llm");
 const tools = require("./tools/index");
 const rag = require("./rag");
 const dataStore = require("./data-store");
-const settingsStore = require("./settings-store");
 
 const MAX_ITERATIONS = 5;
 
-async function process(userText, opts = {}) {
-  const s = settingsStore.load();
+const REMOTE_TOOLS = new Set(["lookup_item", "search_quests", "get_map_info", "get_hideout_requirements"]);
+const MEMORY_TOOLS = new Set(["remember_fact", "recall_fact"]);
 
+async function process(userText, opts = {}) {
   let ragContext = "";
   try {
     ragContext = await rag.search(userText);
@@ -25,7 +25,8 @@ async function process(userText, opts = {}) {
   } catch {}
 
   const isLocal = !opts.apiKey && (!opts.baseURL || opts.baseURL.includes("localhost"));
-  const useTools = !isLocal && tools.getSchemas().length > 0;
+  const allSchemas = tools.getSchemas();
+  const activeSchemas = isLocal ? allSchemas.filter((t) => MEMORY_TOOLS.has(t.name)) : allSchemas;
 
   let systemPromptAppend = ragContext;
   if (memoryProfile) systemPromptAppend += memoryProfile;
@@ -39,23 +40,29 @@ async function process(userText, opts = {}) {
       systemPromptAppend,
     };
 
-    if (useTools) llmOpts.tools = tools.getSchemas();
+    if (activeSchemas.length > 0) llmOpts.tools = activeSchemas;
 
     const result = await llm.ask(userText, llmOpts);
 
     if (result.finishReason === "tool_calls" && result.toolCalls) {
       for (const tc of result.toolCalls) {
+        console.log(`[agent] tool_call: ${tc.function.name}(${tc.function.arguments})`);
         const handler = tools.getHandler(tc.function.name);
         if (handler) {
           try {
             const args = JSON.parse(tc.function.arguments);
             const output = await handler(args);
             llm.pushToolResult(tc.id, output);
+            console.log(`[agent] tool_result: ${output.slice(0, 200)}`);
           } catch (err) {
-            llm.pushToolResult(tc.id, `Error: ${err.message}`);
+            const msg = `Error executing ${tc.function.name}: ${err.message}`;
+            llm.pushToolResult(tc.id, msg);
+            console.log(`[agent] tool_error: ${msg}`);
           }
         } else {
-          llm.pushToolResult(tc.id, `Unknown tool: ${tc.function.name}`);
+          const msg = `Unknown tool: ${tc.function.name}`;
+          llm.pushToolResult(tc.id, msg);
+          console.log(`[agent] tool_error: ${msg}`);
         }
       }
       continue;

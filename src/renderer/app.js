@@ -203,7 +203,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const actions = document.getElementById("memory-actions");
     tbody.innerHTML = "";
     if (data.error || !data.length) {
-      tbody.innerHTML = "";
       empty.style.display = "";
       actions.style.display = "none";
       return;

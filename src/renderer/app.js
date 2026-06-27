@@ -170,9 +170,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     for (const key of keys) {
       const el = $(`input-${key}`);
       if (!el) continue;
-      if (el.tagName === "SELECT" || el.type !== "password") {
-        data[key] = el.value;
-      } else {
+    if (el.type === "checkbox") {
+      data[key] = el.checked;
+    } else if (el.tagName === "SELECT" || el.type !== "password") {
+      data[key] = el.value;
+    } else {
         const orig = el.dataset.originalValue || "";
         if (el.value !== orig) data[key] = el.value;
       }

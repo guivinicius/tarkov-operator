@@ -1,6 +1,11 @@
 const {
   app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut,
 } = require("electron");
+
+// Ensure consistent userData path between dev and production builds.
+// package.json name (dev) differs from electron-builder productName (prod).
+app.setName("Tarkov Operator");
+
 const path = require("path");
 const https = require("https");
 const http = require("http");

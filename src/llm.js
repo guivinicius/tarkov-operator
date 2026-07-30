@@ -1,5 +1,3 @@
-// LLM via OpenAI-compatible API (OpenRouter, OpenAI, Ollama, etc.)
-
 const OpenAI = require("openai");
 
 const conversationHistory = [];
@@ -23,11 +21,19 @@ LIMITATIONS:
 
 You are not an assistant. You are ops. Short. Professional.`;
 
+let cachedClient = null;
+let cachedApiKey = "";
+let cachedBaseURL = "";
+
 function getClient(apiKey, baseURL) {
-  return new OpenAI({
-    apiKey: apiKey,
-    baseURL: baseURL || "https://openrouter.ai/api/v1",
-  });
+  const resolvedBase = baseURL || "https://openrouter.ai/api/v1";
+  if (cachedClient && apiKey === cachedApiKey && resolvedBase === cachedBaseURL) {
+    return cachedClient;
+  }
+  cachedApiKey = apiKey;
+  cachedBaseURL = resolvedBase;
+  cachedClient = new OpenAI({ apiKey, baseURL: resolvedBase });
+  return cachedClient;
 }
 
 function newSession() {
@@ -36,8 +42,6 @@ function newSession() {
 
 async function ask(userMessage, opts = {}) {
   const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY || "ollama";
-  const isLocal = !opts.apiKey && (!opts.baseURL || opts.baseURL.includes("localhost"));
-
   const baseURL = opts.baseURL || "https://openrouter.ai/api/v1";
   const model = opts.model || "anthropic/claude-sonnet-4.6";
   const client = getClient(apiKey, baseURL);
@@ -53,6 +57,13 @@ async function ask(userMessage, opts = {}) {
     { role: "user", content: userMessage },
   ];
 
+  console.log(`[llm] sys_prompt=${systemContent.length}chars history=${conversationHistory.length}msgs tools=${opts.tools?.length || 0}`);
+  if (opts.tools?.length > 0) {
+    for (const t of opts.tools) {
+      console.log(`[llm] tool_def: ${t.name} params=${JSON.stringify(t.parameters || {}).length}chars`);
+    }
+  }
+
   const t0 = performance.now();
   const completionOpts = {
     model,
@@ -61,12 +72,31 @@ async function ask(userMessage, opts = {}) {
     temperature: 0.7,
   };
 
-  if (opts.tools && opts.tools.length > 0) {
-    completionOpts.tools = opts.tools;
+  if (opts.tools?.length > 0) {
+    completionOpts.tools = opts.tools.map((t) => ({
+      type: "function",
+      function: t.function || t,
+    }));
     completionOpts.tool_choice = "auto";
   }
 
-  const response = await client.chat.completions.create(completionOpts);
+  let response;
+  try {
+    response = await client.chat.completions.create(completionOpts);
+  } catch (err) {
+    const msg = err.message || String(err);
+    console.log(`[llm] api_error="${msg}"`);
+    return {
+      text: "",
+      raw: "",
+      latency: (performance.now() - t0) / 1000,
+      finishReason: "error",
+      toolCalls: null,
+      model,
+      promptTokens: 0,
+      completionTokens: 0,
+    };
+  }
 
   const latency = (performance.now() - t0) / 1000;
   const choice = response.choices?.[0];
@@ -76,7 +106,16 @@ async function ask(userMessage, opts = {}) {
   const finishReason = choice?.finish_reason || "unknown";
   const usage = response.usage || {};
 
-  if (toolCalls && toolCalls.length > 0) {
+  console.log(`[llm] finish=${finishReason} latency=${latency.toFixed(1)}s pt=${usage.prompt_tokens} ct=${usage.completion_tokens}`);
+  if (toolCalls?.length > 0) {
+    console.log(`[llm] tool_calls=${toolCalls.length}`);
+    for (const tc of toolCalls) {
+      console.log(`[llm] tool_call: ${tc.function.name}(${tc.function.arguments})`);
+    }
+  }
+  if (rawContent) console.log(`[llm] text="${rawContent.replace(/\n/g, "\\n").slice(0, 300)}"`);
+
+  if (toolCalls?.length > 0) {
     conversationHistory.push({
       role: "assistant",
       content: rawContent,
@@ -96,13 +135,9 @@ async function ask(userMessage, opts = {}) {
     );
   }
 
-  // Keep last 15 exchanges to stay within context window
   if (conversationHistory.length > 30) {
     conversationHistory.splice(0, conversationHistory.length - 30);
   }
-
-  console.log(`[llm-raw] finish=${choice?.finish_reason} pt=${usage.prompt_tokens} ct=${usage.completion_tokens}`);
-  console.log(`[llm-raw] content="${rawContent.replace(/\n/g, "\\n").slice(0, 500)}"`);
 
   return {
     text,

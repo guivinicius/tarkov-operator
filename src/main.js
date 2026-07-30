@@ -9,6 +9,7 @@ app.setName("Tarkov Operator");
 app.setAppUserModelId("com.tarkov-operator.desktop");
 
 const path = require("path");
+const fs = require("fs");
 const https = require("https");
 const http = require("http");
 const { execSync } = require("child_process");
@@ -654,6 +655,19 @@ app.whenReady().then(() => {
   dataStore.init(app.getPath("userData"));
   settingsStore.init(app.getPath("userData"));
 
+  try {
+    const snapshotPath = path.join(__dirname, "..", "data", "snapshot.json");
+    const snapshot = JSON.parse(fs.readFileSync(snapshotPath, "utf8"));
+    const seedResult = dataStore.seedFromSnapshot(snapshot);
+    if (seedResult.skipped) {
+      log("info", "[data] Snapshot seed skipped (DB already populated)");
+    } else {
+      log("info", `[data] Seeded from bundled snapshot: ${seedResult.items} items, ${seedResult.maps} maps, ${seedResult.quests} quests`);
+    }
+  } catch (err) {
+    log("warn", `[data] Snapshot seed failed (app will continue): ${err.message}`);
+  }
+
   // Without this, getUserMedia in the capture window is denied outright.
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(permission === "media");
@@ -698,6 +712,7 @@ app.on("window-all-closed", () => {});
 app.on("before-quit", () => {
   globalShortcut.unregisterAll();
   if (tray) { tray.destroy(); tray = null; }
+  dataStore.close();
 });
 
 app.on("activate", () => openSettingsWindow());

@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 2,
+  "fetchedAt": "FIXTURE",
+  "items": [
+    {
+      "id": "5c0d5e4486f77478390952fe",
+      "name": "5.56x45mm M995",
+      "shortName": "M995",
+      "description": "5.56x45mm M995 AP armor-piercing round.",
+      "category": "Ammo",
+      "types": "[\"ammo\"]",
+      "basePrice": 1500,
+      "weight": 0.01,
+      "avg24hPrice": 7500,
+      "lastLowPrice": 7200,
+      "sellFor": "[{\"vendor\":\"Mechanic\",\"priceRUB\":900}]",
+      "caliber": "Caliber556x45NATO",
+      "penetrationPower": 53,
+      "damage": 45,
+      "armorDamage": 72,
+      "fragmentationChance": 0.2,
+      "ammoType": "bullet",
+      "projectileCount": 1,
+      "initialSpeed": 927
+    },
+    {
+      "id": "5c0d688c86f77413ae3407b2",
+      "name": "LEDX Skin Transilluminator",
+      "shortName": "LEDX",
+      "description": "A rare and valuable medical item.",
+      "category": "Medical",
+      "types": "[\"barter\"]",
+      "basePrice": 18069,
+      "weight": 0.1,
+      "avg24hPrice": 950000,
+      "lastLowPrice": 920000,
+      "sellFor": "[{\"vendor\":\"Therapist\",\"priceRUB\":700000}]",
+      "caliber": null,
+      "penetrationPower": null,
+      "damage": null,
+      "armorDamage": null,
+      "fragmentationChance": null,
+      "ammoType": null,
+      "projectileCount": null,
+      "initialSpeed": null
+    },
+    {
+      "id": "5efb0cabfb3944d2beadcf3e",
+      "name": "7.62x39mm BP gzh",
+      "shortName": "BP gzh",
+      "description": "7.62x39mm Bimetallic Pointed steel core bullet.",
+      "category": "Ammo",
+      "types": "[\"ammo\"]",
+      "basePrice": 2200,
+      "weight": 0.012,
+      "avg24hPrice": 5100,
+      "lastLowPrice": 4900,
+      "sellFor": "[{\"vendor\":\"Prapor\",\"priceRUB\":1400}]",
+      "caliber": "Caliber762x39",
+      "penetrationPower": 47,
+      "damage": 56,
+      "armorDamage": 70,
+      "fragmentationChance": 0.1,
+      "ammoType": "bullet",
+      "projectileCount": 1,
+      "initialSpeed": 745
+    }
+  ],
+  "maps": [
+    {
+      "id": "5714dbc024597771384a510d",
+      "name": "Reserve",
+      "description": "A large military base with underground bunkers and helicopter pad.",
+      "enemies": "Scavs, Raiders, Rogue Bosses",
+      "raidDuration": 35,
+      "players": "3-9",
+      "minPlayerLevel": 0,
+      "extracts": "[{\"name\":\"D-2\",\"faction\":\"pmc\"},{\"name\":\"Scav Lands\",\"faction\":\"scav\"}]"
+    },
+    {
+      "id": "5704e4dad2720bb55b8b4567",
+      "name": "Customs",
+      "description": "Industrial area with warehouses and a construction site.",
+      "enemies": "Scavs, Reshala",
+      "raidDuration": 35,
+      "players": "8-12",
+      "minPlayerLevel": 0,
+      "extracts": "[{\"name\":\"RUAF Roadblock\",\"faction\":\"pmc\"},{\"name\":\"ZB-1011\",\"faction\":\"pmc\"},{\"name\":\"Scav Checkpoint\",\"faction\":\"scav\"}]"
+    }
+  ],
+  "quests": [
+    {
+      "id": "5c51aac186f77432ea65c552",
+      "name": "Survivalist Path - Unprotected But Dangerous",
+      "trader": "Jaeger",
+      "objectives": "Survive 2 raids on Reserve; Kill 5 Scavs on Reserve",
+      "map": "Reserve",
+      "minPlayerLevel": 10,
+      "kappaRequired": 0,
+      "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Survivalist_Path_-_Unprotected_But_Dangerous",
+      "objectivesJson": "[{\"type\":\"experience\",\"description\":\"Survive 2 raids on Reserve\",\"optional\":false},{\"type\":\"kill\",\"description\":\"Kill 5 Scavs on Reserve\",\"optional\":false}]",
+      "requirements": ""
+    },
+    {
+      "id": "59675d6c86f774f2f412927e",
+      "name": "Checking",
+      "trader": "Prapor",
+      "objectives": "Locate the warehouse with unknown shipment on Customs; Mark the crates with an MS2000 Marker",
+      "map": "Customs",
+      "minPlayerLevel": 1,
+      "kappaRequired": 0,
+      "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Checking",
+      "objectivesJson": "[{\"type\":\"findQuestItem\",\"description\":\"Locate the warehouse with unknown shipment on Customs\",\"optional\":false},{\"type\":\"mark\",\"description\":\"Mark the crates with an MS2000 Marker\",\"optional\":false}]",
+      "requirements": ""
+    }
+  ],
+  "traders": [
+    {
+      "id": "5a7c2eca46aef81a7ca2145d",
+      "name": "Jaeger",
+      "description": "A former forest ranger who now trades in the Tarkov region.",
+      "currency": "RUB"
+    },
+    {
+      "id": "54cb50c76803fa8b248b4571",
+      "name": "Prapor",
+      "description": "Military surplus dealer, sells weapons, ammo, and gear.",
+      "currency": "RUB"
+    },
+    {
+      "id": "54cb57776803fa99248b456e",
+      "name": "Therapist",
+      "description": "Medical supplies dealer.",
+      "currency": "RUB"
+    },
+    {
+      "id": "58330581ace78e27b8b10cee",
+      "name": "Skier",
+      "description": "Criminal dealer who trades in various goods.",
+      "currency": "EUR"
+    },
+    {
+      "id": "5935c25fb3acc3127c3d8cd9",
+      "name": "Peacekeeper",
+      "description": "UN officer who trades in USD-priced goods.",
+      "currency": "USD"
+    },
+    {
+      "id": "5a29aca186f77465ed21de78",
+      "name": "Mechanic",
+      "description": "Electronics and modification specialist.",
+      "currency": "EUR"
+    },
+    {
+      "id": "5ac3b934156ae10c4430e83c",
+      "name": "Ragman",
+      "description": "Clothing and armor dealer.",
+      "currency": "RUB"
+    }
+  ],
+  "hideout": [
+    {
+      "id": "5d484fdf654e7600691aadf8",
+      "name": "Nutrition Unit level 1",
+      "requirements": "[{\"type\":\"item\",\"count\":3,\"name\":\"Purified water\"},{\"type\":\"item\",\"count\":1,\"name\":\"Water filter\"}]"
+    },
+    {
+      "id": "5d484fcf654e76006657f855",
+      "name": "Medstation level 1",
+      "requirements": "[{\"type\":\"item\",\"count\":2,\"name\":\"Analgin painkillers\"},{\"type\":\"item\",\"count\":1,\"name\":\"Immobilizing splint\"}]"
+    },
+    {
+      "id": "5d484fc0654e760068b758c1",
+      "name": "Workbench level 1",
+      "requirements": "[{\"type\":\"item\",\"count\":3,\"name\":\"Bolts\"},{\"type\":\"item\",\"count\":6,\"name\":\"Nuts\"}]"
+    }
+  ]
+}

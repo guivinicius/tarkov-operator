@@ -29,6 +29,7 @@
     "asarUnpack": ["node_modules/better-sqlite3/**"],
     "files": [
       "src/**/*",
+      "data/**/*",
       "node_modules/**/*"
     ],
     "mac": {

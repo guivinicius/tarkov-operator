@@ -528,6 +528,25 @@ function getQuestInfo(nameQuery) {
   return results.length > 0 ? results : tryQuery(fallback);
 }
 
+function seedFromSnapshot(snapshot, opts = {}) {
+  const force = opts.force === true;
+
+  if (getStatus().items > 0 && !force) {
+    return { skipped: true };
+  }
+
+  const items = insertItems(snapshot.items || []);
+  const maps = insertMaps(snapshot.maps || []);
+  const quests = insertQuests(snapshot.quests || []);
+  const traders = insertTraders(snapshot.traders || []);
+  const hideout = insertHideout(snapshot.hideout || []);
+
+  setMeta("last_fetch", snapshot.fetchedAt);
+  setMeta("data_source", "snapshot");
+
+  return { skipped: false, items, maps, quests, traders, hideout };
+}
+
 function clearAll() {
   db.exec(`
     DELETE FROM items; DELETE FROM items_fts;
@@ -551,4 +570,5 @@ module.exports = {
   setMemory, getMemory, getAllMemory, deleteMemory, clearMemory,
   setSetting, getSetting, getAllSettings,
   getAmmoForClass, getItemValue, getMapWithExtracts, getQuestInfo,
+  seedFromSnapshot,
 };

@@ -3,15 +3,78 @@
 
 const path = require("path");
 const Database = require("better-sqlite3");
+const { buildFtsQuery } = require("./fts-query");
+
+// Increment this constant whenever the game-data schema changes.
+// init() will drop-and-recreate game tables on mismatch.
+// settings and user_memory are NEVER affected by a schema reset.
+const SCHEMA_VERSION = 2;
 
 let db = null;
 let dbPath = "";
+
+// --- Schema helpers ---
+
+/**
+ * Create the three permanent tables that must survive any game-data schema reset.
+ * Safe to call multiple times (IF NOT EXISTS guards).
+ */
+function ensurePermanentTables() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS user_memory (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+  `);
+}
+
+/**
+ * Drop only the game-data tables and their FTS shadows.
+ * meta, settings, and user_memory are intentionally untouched.
+ */
+function dropGameTables() {
+  db.exec(`
+    DROP TABLE IF EXISTS items_fts;
+    DROP TABLE IF EXISTS maps_fts;
+    DROP TABLE IF EXISTS quests_fts;
+    DROP TABLE IF EXISTS items;
+    DROP TABLE IF EXISTS maps;
+    DROP TABLE IF EXISTS quests;
+    DROP TABLE IF EXISTS traders;
+    DROP TABLE IF EXISTS hideout_modules;
+  `);
+}
 
 function init(userDataPath) {
   dbPath = path.join(userDataPath, "tarkov-data.db");
   db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
+
+  // Permanent tables must exist before getMeta() is called.
+  ensurePermanentTables();
+
+  // On a version mismatch, drop game tables so they are recreated with the new schema.
+  // null means a brand-new install — no reset needed, just create tables below.
+  const storedVersion = getMeta("schema_version");
+  if (storedVersion !== null && storedVersion !== String(SCHEMA_VERSION)) {
+    dropGameTables();
+    // Remove stale last_fetch from meta — do NOT delete the whole row or the table.
+    db.prepare("DELETE FROM meta WHERE key = 'last_fetch'").run();
+  }
+
   createTables();
+  setMeta("schema_version", String(SCHEMA_VERSION));
 }
 
 function createTables() {
@@ -25,6 +88,17 @@ function createTables() {
       types TEXT,
       base_price INTEGER,
       weight REAL,
+      avg_24h_price INTEGER,
+      last_low_price INTEGER,
+      sell_for TEXT,
+      caliber TEXT,
+      penetration_power INTEGER,
+      damage INTEGER,
+      armor_damage INTEGER,
+      fragmentation_chance REAL,
+      ammo_type TEXT,
+      projectile_count INTEGER,
+      initial_speed REAL,
       fetched_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -34,6 +108,9 @@ function createTables() {
       description TEXT,
       enemies TEXT,
       raid_duration INTEGER,
+      players TEXT,
+      min_player_level INTEGER,
+      extracts TEXT,
       fetched_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -42,6 +119,12 @@ function createTables() {
       name TEXT,
       trader TEXT,
       objectives TEXT,
+      map TEXT,
+      min_player_level INTEGER,
+      kappa_required INTEGER,
+      wiki_link TEXT,
+      objectives_json TEXT,
+      requirements TEXT,
       fetched_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -59,25 +142,9 @@ function createTables() {
       requirements TEXT,
       fetched_at TEXT DEFAULT (datetime('now'))
     );
-
-    CREATE TABLE IF NOT EXISTS meta (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS user_memory (
-      key TEXT PRIMARY KEY,
-      value TEXT,
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
   `);
 
-  // FTS5 virtual tables
+  // FTS5 virtual tables — column lists unchanged; structured fields are queried directly.
   try {
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
@@ -110,13 +177,27 @@ function insertItems(items) {
   const tx = db.transaction(() => {
     db.prepare("DELETE FROM items").run();
     db.prepare("DELETE FROM items_fts").run();
-    const insert = db.prepare(
-      "INSERT OR REPLACE INTO items (id, name, short_name, description, category, types, base_price, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    );
+    const insert = db.prepare(`
+      INSERT OR REPLACE INTO items (
+        id, name, short_name, description, category, types, base_price, weight,
+        avg_24h_price, last_low_price, sell_for, caliber,
+        penetration_power, damage, armor_damage, fragmentation_chance,
+        ammo_type, projectile_count, initial_speed
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
     for (const item of items) {
-      insert.run(item.id, item.name, item.shortName, item.description, item.category, item.types, item.basePrice, item.weight);
+      insert.run(
+        item.id, item.name, item.shortName, item.description,
+        item.category, item.types, item.basePrice, item.weight,
+        item.avg24hPrice ?? null, item.lastLowPrice ?? null,
+        item.sellFor ?? null, item.caliber ?? null,
+        item.penetrationPower ?? null, item.damage ?? null,
+        item.armorDamage ?? null, item.fragmentationChance ?? null,
+        item.ammoType ?? null, item.projectileCount ?? null,
+        item.initialSpeed ?? null
+      );
     }
-    // Rebuild FTS index
+    // Rebuild FTS index (column list unchanged)
     db.exec("INSERT INTO items_fts(rowid, name, short_name, description, category) SELECT rowid, name, short_name, description, category FROM items");
   });
   tx();
@@ -127,11 +208,17 @@ function insertMaps(maps) {
   const tx = db.transaction(() => {
     db.prepare("DELETE FROM maps").run();
     db.prepare("DELETE FROM maps_fts").run();
-    const insert = db.prepare(
-      "INSERT OR REPLACE INTO maps (id, name, description, enemies, raid_duration) VALUES (?, ?, ?, ?, ?)"
-    );
+    const insert = db.prepare(`
+      INSERT OR REPLACE INTO maps (
+        id, name, description, enemies, raid_duration,
+        players, min_player_level, extracts
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
     for (const m of maps) {
-      insert.run(m.id, m.name, m.description, m.enemies, m.raidDuration);
+      insert.run(
+        m.id, m.name, m.description, m.enemies, m.raidDuration,
+        m.players ?? null, m.minPlayerLevel ?? null, m.extracts ?? null
+      );
     }
     db.exec("INSERT INTO maps_fts(rowid, name, description, enemies) SELECT rowid, name, description, enemies FROM maps");
   });
@@ -143,11 +230,19 @@ function insertQuests(quests) {
   const tx = db.transaction(() => {
     db.prepare("DELETE FROM quests").run();
     db.prepare("DELETE FROM quests_fts").run();
-    const insert = db.prepare(
-      "INSERT OR REPLACE INTO quests (id, name, trader, objectives) VALUES (?, ?, ?, ?)"
-    );
+    const insert = db.prepare(`
+      INSERT OR REPLACE INTO quests (
+        id, name, trader, objectives,
+        map, min_player_level, kappa_required, wiki_link, objectives_json, requirements
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
     for (const q of quests) {
-      insert.run(q.id, q.name, q.trader, q.objectives);
+      insert.run(
+        q.id, q.name, q.trader, q.objectives,
+        q.map ?? null, q.minPlayerLevel ?? null,
+        q.kappaRequired ?? null, q.wikiLink ?? null,
+        q.objectivesJson ?? null, q.requirements ?? null
+      );
     }
     db.exec("INSERT INTO quests_fts(rowid, name, trader, objectives) SELECT rowid, name, trader, objectives FROM quests");
   });
@@ -263,56 +358,51 @@ function getStatus() {
   return { ...counts, lastFetch };
 }
 
+/**
+ * Full-text search across items, maps, and quests.
+ * Tries an AND-joined query first (higher precision); falls back to OR (higher recall)
+ * only when the AND query returns zero results.
+ */
 function fullTextSearch(query, limit = 5) {
-  const results = [];
+  const { primary, fallback } = buildFtsQuery(query);
+  if (!primary) return [];
 
-  if (!query || query.length < 2) return results;
+  const run = (ftsQuery) => {
+    const results = [];
 
-  // Sanitize for FTS5: escape special chars and build a prefix query
-  const terms = query.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
+    try {
+      const items = db.prepare(
+        `SELECT i.name, i.short_name, i.description, i.category, i.base_price, i.types, rank
+         FROM items_fts f JOIN items i ON i.rowid = f.rowid
+         WHERE items_fts MATCH ? ORDER BY rank LIMIT ?`
+      ).all(ftsQuery, limit);
+      for (const item of items) results.push({ type: "item", ...item });
+    } catch {}
 
-  // Build OR query with prefix matching
-  const ftsQuery = terms.map((t) => `"${t}"*`).join(" OR ");
+    try {
+      const maps = db.prepare(
+        `SELECT m.name, m.description, m.enemies, rank
+         FROM maps_fts f JOIN maps m ON m.rowid = f.rowid
+         WHERE maps_fts MATCH ? ORDER BY rank LIMIT ?`
+      ).all(ftsQuery, limit);
+      for (const map of maps) results.push({ type: "map", ...map });
+    } catch {}
 
-  if (!ftsQuery) return results;
+    try {
+      const quests = db.prepare(
+        `SELECT q.name, q.objectives, rank
+         FROM quests_fts f JOIN quests q ON q.rowid = f.rowid
+         WHERE quests_fts MATCH ? ORDER BY rank LIMIT ?`
+      ).all(ftsQuery, limit);
+      for (const quest of quests) results.push({ type: "quest", ...quest });
+    } catch {}
 
-  try {
-    const items = db.prepare(
-      `SELECT i.name, i.short_name, i.description, i.category, i.base_price, i.types, rank
-       FROM items_fts f JOIN items i ON i.rowid = f.rowid
-       WHERE items_fts MATCH ? ORDER BY rank LIMIT ?`
-    ).all(ftsQuery, limit);
+    return results;
+  };
 
-    for (const item of items) {
-      results.push({ type: "item", ...item });
-    }
-  } catch {}
-
-  try {
-    const maps = db.prepare(
-      `SELECT m.name, m.description, m.enemies, rank
-       FROM maps_fts f JOIN maps m ON m.rowid = f.rowid
-       WHERE maps_fts MATCH ? ORDER BY rank LIMIT ?`
-    ).all(ftsQuery, limit);
-
-    for (const map of maps) {
-      results.push({ type: "map", ...map });
-    }
-  } catch {}
-
-  try {
-    const quests = db.prepare(
-      `SELECT q.name, q.objectives, rank
-       FROM quests_fts f JOIN quests q ON q.rowid = f.rowid
-       WHERE quests_fts MATCH ? ORDER BY rank LIMIT ?`
-    ).all(ftsQuery, limit);
-
-    for (const quest of quests) {
-      results.push({ type: "quest", ...quest });
-    }
-  } catch {}
-
-  return results;
+  const primaryResults = run(primary);
+  if (primaryResults.length > 0) return primaryResults;
+  return run(fallback);
 }
 
 function clearAll() {
@@ -330,4 +420,11 @@ function close() {
   if (db) { db.close(); db = null; }
 }
 
-module.exports = { init, insertItems, insertMaps, insertQuests, insertTraders, insertHideout, getStatus, fullTextSearch, searchHideout, clearAll, close, setMeta, getMeta, setMemory, getMemory, getAllMemory, deleteMemory, clearMemory, setSetting, getSetting, getAllSettings };
+module.exports = {
+  init,
+  insertItems, insertMaps, insertQuests, insertTraders, insertHideout,
+  getStatus, fullTextSearch, searchHideout, clearAll, close,
+  setMeta, getMeta,
+  setMemory, getMemory, getAllMemory, deleteMemory, clearMemory,
+  setSetting, getSetting, getAllSettings,
+};

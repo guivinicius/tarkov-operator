@@ -13,8 +13,10 @@ const schema = {
 };
 
 async function handler(args) {
+  console.log(`[tool:search_quests] query="${args.query}"`);
   const results = dataStore.fullTextSearch(args.query, 5);
   const quests = results.filter((r) => r.type === "quest");
+  console.log(`[tool:search_quests] found=${quests.length}`);
   if (quests.length === 0) return "No quests found.";
   return quests.map((q) =>
     `${q.name} — ${q.objectives.slice(0, 200)}`

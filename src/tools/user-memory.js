@@ -26,12 +26,15 @@ const recallSchema = {
 };
 
 async function rememberHandler(args) {
+  console.log(`[tool:remember_fact] key="${args.key}" value="${args.value}"`);
   dataStore.setMemory(args.key, args.value);
   return `Saved: ${args.key} = ${args.value}`;
 }
 
 async function recallHandler(args) {
+  console.log(`[tool:recall_fact] key="${args.key}"`);
   const result = dataStore.getMemory(args.key);
+  console.log(`[tool:recall_fact] found=${!!result}`);
   if (!result) return `No saved fact for "${args.key}".`;
   return `${args.key}: ${result.value} (saved ${result.updated_at})`;
 }

@@ -13,8 +13,10 @@ const schema = {
 };
 
 async function handler(args) {
+  console.log(`[tool:get_map_info] map="${args.map_name}"`);
   const results = dataStore.fullTextSearch(args.map_name, 3);
   const map = results.find((r) => r.type === "map");
+  console.log(`[tool:get_map_info] found=${!!map}`);
   if (!map) return "Map not found.";
   return `${map.name}: ${map.description.slice(0, 300)} | Enemies: ${map.enemies}`;
 }

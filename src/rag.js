@@ -40,8 +40,12 @@ function formatResults(results) {
 }
 
 async function search(userText) {
+  console.log(`[rag] query="${userText}"`);
   const results = dataStore.fullTextSearch(userText, 11);
-  return formatResults(results);
+  console.log(`[rag] fts5_results=${results.length} items=${results.filter(r=>r.type==="item").length} maps=${results.filter(r=>r.type==="map").length} quests=${results.filter(r=>r.type==="quest").length}`);
+  const formatted = formatResults(results);
+  if (formatted) console.log(`[rag] context_size=${formatted.length}chars`);
+  return formatted;
 }
 
 module.exports = { search, formatResults };

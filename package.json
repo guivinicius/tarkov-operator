@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
+    "test": "ELECTRON_RUN_AS_NODE=1 electron --test tests/*.test.js",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
     "build": "electron-builder --mac --win"

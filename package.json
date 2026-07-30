@@ -32,15 +32,24 @@
       "data/**/*",
       "node_modules/**/*"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "guivinicius",
+        "repo": "tarkov-operator"
+      }
+    ],
     "mac": {
       "target": "dmg",
       "category": "public.app-category.utilities",
+      "icon": "build/icon.png",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Tarkov Operator uses the microphone for push-to-talk questions."
       }
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.png"
     }
   }
 }

@@ -25,6 +25,7 @@ const dataStore = require("./data-store");
 const tarkovDev = require("./tarkov-dev");
 const agent = require("./agent");
 const logger = require("./logger");
+const keyValidator = require("./key-validator");
 
 // --- State ----------------------------------------------------------------
 let tray = null;
@@ -365,10 +366,18 @@ async function fetchSTTModels(provider, apiKey) {
   return [];
 }
 
-async function fetchTTSVoices(provider, apiKey, model) {
+// Verified: GET /api/v1/models/{id} is a 404, and `supported_voices` on the
+// /models list response is empty for all models. Do not refetch these.
+const OPENROUTER_TTS_VOICES = [
+  "alloy", "echo", "fable", "nova", "shimmer", "coral", "sage", "ash", "ballad",
+];
+
+async function fetchTTSVoices(provider, apiKey) {
   if (provider === "elevenlabs") {
     try {
-      const data = await fetchJSON("https://api.elevenlabs.io/v1/voices", {});
+      const data = await fetchJSON("https://api.elevenlabs.io/v1/voices", {
+        ...(apiKey ? { "xi-api-key": apiKey } : {}),
+      });
       return (data.voices || []).map((v) => ({
         id: v.voice_id,
         name: v.name,
@@ -377,29 +386,8 @@ async function fetchTTSVoices(provider, apiKey, model) {
       return [];
     }
   }
-  if (provider === "openrouter" && model) {
-    try {
-      const data = await fetchJSON(
-        `https://openrouter.ai/api/v1/models/${encodeURIComponent(model)}`,
-        apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
-      );
-      const voices = data.data?.supported_voices;
-      if (voices && voices.length > 0) {
-        return voices.map((v) => ({ id: v, name: v }));
-      }
-    } catch {}
-    // fallback to standard OpenAI voices
-    return [
-      { id: "alloy", name: "alloy" },
-      { id: "echo", name: "echo" },
-      { id: "fable", name: "fable" },
-      { id: "nova", name: "nova" },
-      { id: "shimmer", name: "shimmer" },
-      { id: "coral", name: "coral" },
-      { id: "sage", name: "sage" },
-      { id: "ash", name: "ash" },
-      { id: "ballad", name: "ballad" },
-    ];
+  if (provider === "openrouter") {
+    return OPENROUTER_TTS_VOICES.map((v) => ({ id: v, name: v }));
   }
   return [];
 }
@@ -546,13 +534,19 @@ ipcMain.handle("fetch-models", async (_event, category, provider, apiKey, baseUR
   }
 });
 
-ipcMain.handle("fetch-voices", async (_event, provider, apiKey, model) => {
+ipcMain.handle("fetch-voices", async (_event, provider, apiKey) => {
   try {
     if (provider === "local") return await fetchLocalTTSVoices();
-    return await fetchTTSVoices(provider, apiKey, model);
+    return await fetchTTSVoices(provider, apiKey);
   } catch (err) {
     return { error: err.message };
   }
+});
+
+ipcMain.handle("validate-key", async (_event, provider, apiKey) => {
+  const result = await keyValidator.validate(provider, apiKey);
+  log(result.ok ? "info" : "error", `[validate] ${provider}: ${result.message}`);
+  return result;
 });
 
 ipcMain.handle("new-session", () => {
@@ -639,14 +633,6 @@ ipcMain.handle("test-tts", async (_event, opts) => {
     log("error", `[tts-test] ${err.message}`);
     return { error: err.message };
   }
-});
-
-ipcMain.handle("check-dependency", async (_event, name) => {
-  if (name === "sox") {
-    // SoX is no longer used; capture runs in-process via getUserMedia.
-    return { installed: true, command: "" };
-  }
-  return { installed: false, command: "" };
 });
 
 // --- App lifecycle --------------------------------------------------------

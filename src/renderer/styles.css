@@ -367,6 +367,67 @@ button:hover { background: #1a4a8a; }
   font-weight: 600;
 }
 
+/* First-run checklist (Home) */
+.first-run {
+  background: #0d0d1a;
+  border: 1px solid #0f3460;
+  border-left: 4px solid #4caf50;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.first-run h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #4caf50;
+}
+
+.first-run ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.first-run li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+  color: #ddd;
+  font-size: 12px;
+}
+
+.first-run li strong { color: #4caf50; font-weight: 600; }
+
+.first-run-note {
+  margin: 10px 0 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #777;
+}
+
+/* Providers key validation */
+.providers-hint {
+  font-style: normal;
+  color: #777;
+  margin-bottom: 10px;
+}
+.providers-hint strong { color: #999; font-weight: 600; }
+
+.key-field:last-child .field { margin-bottom: 0; }
+
+.validate-btn { flex-shrink: 0; min-width: 62px; }
+
+.validate-status {
+  margin: 2px 0 8px 80px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #888;
+}
+
+.validate-ok { color: #4caf50; }
+.validate-fail { color: #ef5350; }
+
 /* Memory tab */
 #memory-table {
   width: 100%;

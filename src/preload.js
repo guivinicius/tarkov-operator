@@ -10,11 +10,11 @@ contextBridge.exposeInMainWorld("operator", {
   fetchModels: (category, provider, apiKey, baseURL) =>
     ipcRenderer.invoke("fetch-models", category, provider, apiKey, baseURL),
 
-  fetchVoices: (provider, apiKey, model) =>
-    ipcRenderer.invoke("fetch-voices", provider, apiKey, model),
+  fetchVoices: (provider, apiKey) =>
+    ipcRenderer.invoke("fetch-voices", provider, apiKey),
 
-  checkDependency: (name) =>
-    ipcRenderer.invoke("check-dependency", name),
+  validateKey: (provider, apiKey) =>
+    ipcRenderer.invoke("validate-key", provider, apiKey),
 
   onLog: (cb) => {
     const h = (_e, entry) => cb(entry);

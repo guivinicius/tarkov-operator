@@ -51,15 +51,25 @@
       <div id="home-error" class="home-error hidden"></div>
       <div class="card home-card">
         <h2>Welcome to Tarkov Operator</h2>
-        <p class="home-desc">
+        <div id="first-run" class="first-run hidden">
+          <h3>Get running in 4 steps</h3>
+          <ol>
+            <li>Paste your <strong>OpenRouter</strong> key in the <strong>Providers</strong> tab.</li>
+            <li>Click <strong>Validate</strong> to confirm the key works.</li>
+            <li>Click <strong>Enable Operator</strong> at the top of this window.</li>
+            <li>Tap your push-to-talk key (<span id="first-run-ptt">F1</span>) and ask a question out loud.</li>
+          </ol>
+          <p class="first-run-note">One OpenRouter key covers both the language model and speech-to-text. Speech output uses your system voice, so no second key is needed.</p>
+        </div>
+        <p class="home-desc" id="home-desc">
           Configure your API keys in the <strong>Providers</strong> tab, then select models in <strong>LLM</strong> and <strong>Voice</strong>.
         </p>
         <div class="home-recommendation">
           <h3>For best quality</h3>
           <ul>
-            <li><strong>STT:</strong> Whisper API (set OpenAI or OpenRouter key)</li>
-            <li><strong>LLM:</strong> Claude via OpenRouter (set OpenRouter key)</li>
-            <li><strong>TTS:</strong> ElevenLabs (set ElevenLabs key)</li>
+            <li><strong>LLM:</strong> Claude via OpenRouter</li>
+            <li><strong>STT:</strong> OpenRouter — the same key, no extra signup</li>
+            <li><strong>TTS:</strong> your system voice (no key); ElevenLabs is an optional upgrade</li>
           </ul>
         </div>
         <div class="home-status">
@@ -72,25 +82,56 @@
     <div id="tab-providers" class="tab-panel">
       <div class="card">
         <h2>API Keys</h2>
-        <div class="field">
-          <label>OpenRouter</label>
-          <input type="password" id="input-OPENROUTER_API_KEY" placeholder="sk-or-...">
+        <p class="hint providers-hint">Paste a key, then click <strong>Validate</strong> to check it against the provider.</p>
+        <div class="key-field">
+          <div class="field">
+            <label>OpenRouter</label>
+            <div class="field-row">
+              <input type="password" id="input-OPENROUTER_API_KEY" placeholder="sk-or-...">
+              <button class="btn-sm validate-btn" data-provider="openrouter" data-key="OPENROUTER_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-OPENROUTER_API_KEY"></div>
         </div>
-        <div class="field">
-          <label>OpenAI</label>
-          <input type="password" id="input-OPENAI_API_KEY" placeholder="sk-...">
+        <div class="key-field">
+          <div class="field">
+            <label>OpenAI</label>
+            <div class="field-row">
+              <input type="password" id="input-OPENAI_API_KEY" placeholder="sk-...">
+              <button class="btn-sm validate-btn" data-provider="openai" data-key="OPENAI_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-OPENAI_API_KEY"></div>
         </div>
-        <div class="field">
-          <label>Anthropic</label>
-          <input type="password" id="input-ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+        <div class="key-field">
+          <div class="field">
+            <label>Anthropic</label>
+            <div class="field-row">
+              <input type="password" id="input-ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+              <button class="btn-sm validate-btn" data-provider="anthropic" data-key="ANTHROPIC_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-ANTHROPIC_API_KEY"></div>
         </div>
-        <div class="field">
-          <label>ElevenLabs</label>
-          <input type="password" id="input-ELEVENLABS_API_KEY" placeholder="Optional — for TTS">
+        <div class="key-field">
+          <div class="field">
+            <label>ElevenLabs</label>
+            <div class="field-row">
+              <input type="password" id="input-ELEVENLABS_API_KEY" placeholder="Optional — for TTS">
+              <button class="btn-sm validate-btn" data-provider="elevenlabs" data-key="ELEVENLABS_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-ELEVENLABS_API_KEY"></div>
         </div>
-        <div class="field">
-          <label>Whisper API</label>
-          <input type="password" id="input-WHISPER_API_KEY" placeholder="Leave blank to use OpenAI/OpenRouter key">
+        <div class="key-field">
+          <div class="field">
+            <label>Whisper API</label>
+            <div class="field-row">
+              <input type="password" id="input-WHISPER_API_KEY" placeholder="Leave blank to use OpenAI/OpenRouter key">
+              <button class="btn-sm validate-btn" data-provider="whisper-api" data-key="WHISPER_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-WHISPER_API_KEY"></div>
         </div>
       </div>
     </div>
@@ -146,7 +187,11 @@
         </div>
         <div class="field">
           <label>Model</label>
-          <select id="input-STT_MODEL"></select>
+          <div class="field-row">
+            <select id="input-STT_MODEL"></select>
+            <button class="btn-sm" id="refresh-stt-models" title="Fetch models">⟳</button>
+            <span id="stt-models-status" class="status-msg"></span>
+          </div>
         </div>
         <div class="field install-instructions" data-depends-on="STT_PROVIDER" data-dep-is="local">
           <label></label>
@@ -241,15 +286,21 @@
     <!-- Tab: System -->
     <div id="tab-system" class="tab-panel">
       <div class="card">
-        <h2>Dependencies</h2>
-        <div class="field" id="sox-dependency">
-          <label>SoX (mic capture)</label>
-          <div class="field-row">
-            <span id="sox-status" class="status-msg">Checking...</span>
-            <button class="btn-sm" id="check-sox-btn">Check</button>
-            <button class="btn-sm" id="install-sox-btn" style="display:none">Install</button>
-          </div>
-        </div>
+        <h2>Microphone</h2>
+        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5">
+          Recording runs inside the app — no external audio tools to install.
+          Your operating system asks for microphone permission the first time you
+          use push-to-talk. If you denied it, grant it in your system privacy
+          settings and restart the app.
+        </p>
+      </div>
+      <div class="card" style="margin-top:0">
+        <h2>Push-to-talk</h2>
+        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5">
+          Tap your PTT key once to start recording, then just stop talking —
+          recording ends on silence. Tap again while speaking to cancel.
+          Recording is capped at 30 seconds.
+        </p>
       </div>
     </div>
 

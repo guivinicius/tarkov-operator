@@ -7,9 +7,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const toggleBtn = $("toggle-btn");
   const logContainer = $("log-container");
   const clearBtn = $("clear-logs-btn");
-  const checkSoxBtn = $("check-sox-btn");
-  const installSoxBtn = $("install-sox-btn");
-  const soxStatus = $("sox-status");
 
   const llmProvider = $("input-LLM_PROVIDER");
   const sttProvider = $("input-STT_PROVIDER");
@@ -21,6 +18,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const ttsVoice = $("input-TTS_VOICE");
   const autoFetchData = $("input-AUTO_FETCH_DATA");
   const homeStatusText = $("home-status-text");
+  const firstRun = $("first-run");
+  const firstRunPtt = $("first-run-ptt");
+  const homeDesc = $("home-desc");
 
   const refreshLlm = $("refresh-llm-models");
   const refreshTts = $("refresh-tts-voices");
@@ -32,6 +32,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const llmStatus = $("llm-models-status");
   const ttsStatus = $("tts-voices-status");
+  const sttStatus = $("stt-models-status");
+  const refreshSttModels = $("refresh-stt-models");
   const ttsModelsStatus = $("tts-models-status");
   const testTtsBtn = $("test-tts-btn");
   const testTtsStatus = $("tts-test-status");
@@ -87,7 +89,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   function setSelect(el, items, selectedId) {
     el.innerHTML = "";
     if (!items || items.length === 0) {
-      el.innerHTML = '<option value="">(none)</option>';
+      const opt = document.createElement("option");
+      opt.value = selectedId || "";
+      opt.textContent = selectedId || "(none)";
+      el.appendChild(opt);
       return;
     }
     for (const item of items) {
@@ -99,69 +104,96 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  const NEEDS_KEY_MESSAGE = "Add a key in Providers first";
+
+  // needsKey reflects whether the provider is usable, not whether its
+  // listing endpoint is public — OpenRouter and ElevenLabs list without auth.
+  function keyFor(category, provider, settings) {
+    if (category === "llm") {
+      if (provider === "ollama") return { apiKey: "", needsKey: false };
+      const apiKey = settings[`${provider.toUpperCase()}_API_KEY`] || "";
+      return { apiKey, needsKey: true };
+    }
+    if (category === "stt") {
+      if (provider === "local") return { apiKey: "", needsKey: false };
+      if (provider === "elevenlabs") {
+        return { apiKey: settings.ELEVENLABS_API_KEY || "", needsKey: true };
+      }
+      if (provider === "openrouter") {
+        return { apiKey: settings.OPENROUTER_API_KEY || "", needsKey: true };
+      }
+      return {
+        apiKey: settings.WHISPER_API_KEY || settings.OPENAI_API_KEY || settings.OPENROUTER_API_KEY || "",
+        needsKey: true,
+      };
+    }
+    if (provider === "openrouter") {
+      return { apiKey: settings.OPENROUTER_API_KEY || "", needsKey: true };
+    }
+    if (provider === "elevenlabs") {
+      return { apiKey: settings.ELEVENLABS_API_KEY || "", needsKey: true };
+    }
+    return { apiKey: "", needsKey: false };
+  }
+
+  function setStatus(statusEl, text) {
+    if (statusEl) statusEl.textContent = text;
+  }
+
+  function savedValueFor(selectEl, settings) {
+    return settings[selectEl.id.replace("input-", "")] || selectEl.value || "";
+  }
+
   async function fetchAndPopulateModels(category, providerSelect, modelSelect, statusEl) {
     const provider = providerSelect.value;
     const settings = await window.operator.getSettings();
-    let apiKey = "";
     const baseURL = $("input-LLM_BASE_URL").value;
-    if (category === "llm") {
-      apiKey = settings[`${provider.toUpperCase()}_API_KEY`] || "";
-    }
-    if (category === "tts" && provider === "openrouter") {
-      apiKey = settings.OPENROUTER_API_KEY;
-    }
+    const { apiKey, needsKey } = keyFor(category, provider, settings);
+    const saved = savedValueFor(modelSelect, settings);
 
-    statusEl.textContent = "Loading...";
-    const result = await window.operator.fetchModels(category, provider, apiKey, baseURL);
-
-    if (result.error) {
-      statusEl.textContent = `Error: ${result.error}`;
+    if (needsKey && !apiKey) {
+      setSelect(modelSelect, [], saved);
+      setStatus(statusEl, NEEDS_KEY_MESSAGE);
       return;
     }
 
-    const current = modelSelect.value;
-    setSelect(modelSelect, result, current);
-    statusEl.textContent = `${result.length} models`;
-    setTimeout(() => { statusEl.textContent = ""; }, 3000);
+    setStatus(statusEl, "Loading...");
+    const result = await window.operator.fetchModels(category, provider, apiKey, baseURL);
+
+    if (result.error) {
+      setStatus(statusEl, `Error: ${result.error}`);
+      return;
+    }
+
+    setSelect(modelSelect, result, saved);
+    setStatus(statusEl, `${result.length} models`);
+    setTimeout(() => setStatus(statusEl, ""), 3000);
   }
 
   async function fetchAndPopulateVoices(providerSelect, voiceSelect, statusEl) {
     const provider = providerSelect.value;
     const settings = await window.operator.getSettings();
-    let apiKey = "";
-    let model = "";
-    if (provider === "openrouter") {
-      apiKey = settings.OPENROUTER_API_KEY;
-      model = ttsModel.value;
-    }
+    const { apiKey, needsKey } = keyFor("tts", provider, settings);
+    const saved = savedValueFor(voiceSelect, settings);
 
-    statusEl.textContent = "Loading...";
-    const result = await window.operator.fetchVoices(provider, apiKey, model);
-
-    if (result.error) {
-      statusEl.textContent = `Error: ${result.error}`;
-      setSelect(voiceSelect, []);
+    if (needsKey && !apiKey) {
+      setSelect(voiceSelect, [], saved);
+      setStatus(statusEl, NEEDS_KEY_MESSAGE);
       return;
     }
 
-    const current = voiceSelect.value;
-    setSelect(voiceSelect, result, current);
-    statusEl.textContent = `${result.length} voices`;
-    setTimeout(() => { statusEl.textContent = ""; }, 3000);
-  }
+    setStatus(statusEl, "Loading...");
+    const result = await window.operator.fetchVoices(provider, apiKey);
 
-  async function checkSox() {
-    soxStatus.textContent = "Checking...";
-    const result = await window.operator.checkDependency("sox");
-    if (result.installed) {
-      soxStatus.textContent = "✅ Installed";
-      installSoxBtn.style.display = "none";
-    } else {
-      soxStatus.textContent = "❌ Not installed";
-      installSoxBtn.style.display = "";
-      installSoxBtn.textContent = `Install (${result.command})`;
-      installSoxBtn.onclick = () => { soxStatus.textContent = `Run: ${result.command}`; };
+    if (result.error) {
+      setStatus(statusEl, `Error: ${result.error}`);
+      setSelect(voiceSelect, [], saved);
+      return;
     }
+
+    setSelect(voiceSelect, result, saved);
+    setStatus(statusEl, `${result.length} voices`);
+    setTimeout(() => setStatus(statusEl, ""), 3000);
   }
 
   async function saveSettings(keys) {
@@ -263,6 +295,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (settings[p.key]) configured.push(p.label);
       else missing.push(p.label);
     }
+
+    const isFirstRun = !settings.OPENROUTER_API_KEY;
+    firstRun.classList.toggle("hidden", !isFirstRun);
+    homeDesc.classList.toggle("hidden", isFirstRun);
+    firstRunPtt.textContent = settings.PTT_KEY || "F1";
+
     const status = await window.operator.getStatus();
     homeStatusText.textContent = `Operator: ${status.enabled ? "Active" : "Idle"} · Keys: ${configured.length} configured, ${missing.length} missing`;
   }
@@ -283,6 +321,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     fetchDataBtn.textContent = "Fetch All";
     setTimeout(() => dataProgress.classList.add("hidden"), 3000);
     refreshDataStatus();
+  }
+
+  async function refreshAllProviderLists() {
+    await Promise.all([
+      fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus),
+      fetchAndPopulateModels("stt", sttProvider, sttModel, sttStatus),
+      fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus),
+      fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus),
+    ]);
   }
 
   function updateUI(enabled) {
@@ -329,11 +376,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Init ---
 
   updateFieldVisibility();
-  fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus);
-  fetchAndPopulateModels("stt", sttProvider, sttModel, ttsStatus);
-  fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
-  fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
-  checkSox();
+  await refreshAllProviderLists();
   refreshDataStatus();
   refreshHomeStatus();
 
@@ -368,7 +411,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   sttProvider.addEventListener("change", async () => {
     updateFieldVisibility();
-    await fetchAndPopulateModels("stt", sttProvider, sttModel, {});
+    await fetchAndPopulateModels("stt", sttProvider, sttModel, sttStatus);
     updateLocalSttCommand();
     await saveSettings(["STT_PROVIDER", "STT_MODEL"]);
     refreshHomeStatus();
@@ -399,7 +442,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     testTtsBtn.disabled = true;
     testTtsStatus.textContent = "Playing...";
     const settings = await window.operator.getSettings();
-    await window.operator.testTTS({
+    const result = await window.operator.testTTS({
       provider: settings.TTS_PROVIDER,
       apiKey:
         settings.TTS_PROVIDER === "openrouter" ? settings.OPENROUTER_API_KEY :
@@ -407,9 +450,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       voice: settings.TTS_VOICE,
       model: settings.TTS_MODEL,
     });
-    testTtsStatus.textContent = "Done";
+    testTtsStatus.textContent = result && result.error ? `Error: ${result.error}` : "Done";
     testTtsBtn.disabled = false;
-    setTimeout(() => { testTtsStatus.textContent = ""; }, 3000);
+    setTimeout(() => { testTtsStatus.textContent = ""; }, result && result.error ? 8000 : 3000);
   });
 
   $("input-LLM_BASE_URL").addEventListener("change", async () => {
@@ -424,20 +467,69 @@ document.addEventListener("DOMContentLoaded", async () => {
   for (const key of ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "WHISPER_API_KEY"]) {
     const el = $(`input-${key}`);
     if (el) {
-      el.addEventListener("input", () => { el.dataset.modified = "true"; });
+      el.addEventListener("input", () => {
+        el.dataset.modified = "true";
+        clearValidateStatus(key);
+      });
       el.addEventListener("blur", async () => {
         if (el.dataset.modified) {
           await saveSettings([key]);
-          refreshHomeStatus();
+          el.dataset.originalValue = el.value;
           delete el.dataset.modified;
+          refreshHomeStatus();
+          await refreshAllProviderLists();
         }
       });
     }
   }
 
+  // --- Key validation ---
+
+  function clearValidateStatus(key) {
+    const statusEl = $(`validate-${key}`);
+    if (!statusEl) return;
+    statusEl.textContent = "";
+    statusEl.className = "validate-status hidden";
+  }
+
+  function renderValidateStatus(key, state, message) {
+    const statusEl = $(`validate-${key}`);
+    if (!statusEl) return;
+    const mark = state === "ok" ? "✓ " : state === "fail" ? "✕ " : "";
+    statusEl.textContent = `${mark}${message}`;
+    statusEl.className = `validate-status${state === "ok" ? " validate-ok" : state === "fail" ? " validate-fail" : ""}`;
+  }
+
+  async function persistTypedKeyBeforeValidating(key, input) {
+    if (!input || !input.dataset.modified) return;
+    await saveSettings([key]);
+    input.dataset.originalValue = input.value;
+    delete input.dataset.modified;
+    refreshHomeStatus();
+  }
+
+  for (const btn of document.querySelectorAll(".validate-btn")) {
+    btn.addEventListener("click", async () => {
+      const key = btn.dataset.key;
+      const provider = btn.dataset.provider;
+      const input = $(`input-${key}`);
+
+      await persistTypedKeyBeforeValidating(key, input);
+
+      const apiKey = (input && input.value) || (input && input.dataset.originalValue) || "";
+      btn.disabled = true;
+      renderValidateStatus(key, "pending", "Checking...");
+      const result = await window.operator.validateKey(provider, apiKey);
+      renderValidateStatus(key, result.ok ? "ok" : "fail", result.message);
+      btn.disabled = false;
+      if (result.ok) await refreshAllProviderLists();
+    });
+  }
+
   // --- Refresh buttons ---
 
   refreshLlm.addEventListener("click", () => fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus));
+  refreshSttModels.addEventListener("click", () => fetchAndPopulateModels("stt", sttProvider, sttModel, sttStatus));
   refreshTts.addEventListener("click", () => fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus));
   refreshTtsModels.addEventListener("click", () => fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus));
 
@@ -477,6 +569,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const pttKeySelect = $("input-PTT_KEY");
   pttKeySelect.addEventListener("change", async () => {
     await saveSettings(["PTT_KEY"]);
+    firstRunPtt.textContent = pttKeySelect.value;
     if (toggleBtn.textContent === "Disable Operator") {
       await window.operator.toggle();
       await window.operator.toggle();
@@ -516,8 +609,4 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => dataProgress.classList.add("hidden"), 3000);
     }
   });
-
-  // --- SoX ---
-
-  checkSoxBtn.addEventListener("click", checkSox);
 });

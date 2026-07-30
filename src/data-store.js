@@ -405,6 +405,129 @@ function fullTextSearch(query, limit = 5) {
   return run(fallback);
 }
 
+// --- Tool query helpers ---
+
+/**
+ * Get ammo rows for a given armor class, optionally filtered by caliber.
+ * Rows ordered by penetration_power DESC, limit 5.
+ * Includes a `reliable` flag: penetration_power >= armorClass * 10.
+ * If none qualify as reliable, returns top 3 with caveat flag.
+ *
+ * @param {number} armorClass  1–6
+ * @param {string|null} caliber  Optional caliber string filter
+ * @returns {{ rows: object[], caveat: boolean }}
+ */
+function getAmmoForClass(armorClass, caliber) {
+  const threshold = armorClass * 10;
+  let rows;
+
+  if (caliber) {
+    rows = db.prepare(
+      `SELECT name, short_name, caliber, penetration_power, damage, armor_damage,
+              fragmentation_chance, ammo_type
+       FROM items
+       WHERE penetration_power IS NOT NULL AND caliber = ?
+       ORDER BY penetration_power DESC LIMIT 5`
+    ).all(caliber);
+  } else {
+    rows = db.prepare(
+      `SELECT name, short_name, caliber, penetration_power, damage, armor_damage,
+              fragmentation_chance, ammo_type
+       FROM items
+       WHERE penetration_power IS NOT NULL
+       ORDER BY penetration_power DESC LIMIT 5`
+    ).all();
+  }
+
+  const reliable = rows.filter((r) => r.penetration_power >= threshold);
+  if (reliable.length > 0) {
+    return { rows: reliable, caveat: false };
+  }
+  // Nothing qualifies — return top 3 with caveat
+  return { rows: rows.slice(0, 3), caveat: true };
+}
+
+/**
+ * Find an item by name using FTS, returning pricing columns.
+ * Best single match.
+ *
+ * @param {string} nameQuery
+ * @returns {object|null}
+ */
+function getItemValue(nameQuery) {
+  const { primary, fallback } = buildFtsQuery(nameQuery);
+  const ftsQuery = primary || fallback;
+  if (!ftsQuery) return null;
+
+  const tryQuery = (q) => {
+    try {
+      return db.prepare(
+        `SELECT i.id, i.name, i.short_name, i.category,
+                i.avg_24h_price, i.last_low_price, i.sell_for, i.base_price
+         FROM items_fts f JOIN items i ON i.rowid = f.rowid
+         WHERE items_fts MATCH ? ORDER BY rank LIMIT 1`
+      ).get(q);
+    } catch { return null; }
+  };
+
+  return tryQuery(primary) || tryQuery(fallback) || null;
+}
+
+/**
+ * Get a map row with extracts parsed into an array.
+ *
+ * @param {string} nameQuery
+ * @returns {object|null}
+ */
+function getMapWithExtracts(nameQuery) {
+  const { primary, fallback } = buildFtsQuery(nameQuery);
+  const tryQuery = (q) => {
+    if (!q) return null;
+    try {
+      return db.prepare(
+        `SELECT m.id, m.name, m.description, m.enemies, m.raid_duration,
+                m.players, m.min_player_level, m.extracts
+         FROM maps_fts f JOIN maps m ON m.rowid = f.rowid
+         WHERE maps_fts MATCH ? ORDER BY rank LIMIT 1`
+      ).get(q);
+    } catch { return null; }
+  };
+
+  const row = tryQuery(primary) || tryQuery(fallback);
+  if (!row) return null;
+
+  try {
+    row.extracts = row.extracts ? JSON.parse(row.extracts) : [];
+  } catch {
+    row.extracts = [];
+  }
+  return row;
+}
+
+/**
+ * Get up to 2 quest rows matching the name query.
+ *
+ * @param {string} nameQuery
+ * @returns {object[]}
+ */
+function getQuestInfo(nameQuery) {
+  const { primary, fallback } = buildFtsQuery(nameQuery);
+  const tryQuery = (q) => {
+    if (!q) return [];
+    try {
+      return db.prepare(
+        `SELECT q.id, q.name, q.trader, q.objectives, q.map,
+                q.min_player_level, q.kappa_required, q.wiki_link, q.requirements
+         FROM quests_fts f JOIN quests q ON q.rowid = f.rowid
+         WHERE quests_fts MATCH ? ORDER BY rank LIMIT 2`
+      ).all(q);
+    } catch { return []; }
+  };
+
+  const results = tryQuery(primary);
+  return results.length > 0 ? results : tryQuery(fallback);
+}
+
 function clearAll() {
   db.exec(`
     DELETE FROM items; DELETE FROM items_fts;
@@ -427,4 +550,5 @@ module.exports = {
   setMeta, getMeta,
   setMemory, getMemory, getAllMemory, deleteMemory, clearMemory,
   setSetting, getSetting, getAllSettings,
+  getAmmoForClass, getItemValue, getMapWithExtracts, getQuestInfo,
 };

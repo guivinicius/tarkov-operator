@@ -1,0 +1,72 @@
+{
+  "items": [
+    {
+      "id": "5c0d5e4486f77478390952fe",
+      "name": "5.56x45mm M995",
+      "shortName": "M995",
+      "description": "5.56x45mm M995 AP armor-piercing round.",
+      "category": "Ammo",
+      "types": "[\"ammo\"]",
+      "basePrice": 1500,
+      "weight": 0.01,
+      "avg24hPrice": 7500,
+      "lastLowPrice": 7200,
+      "sellFor": "[{\"vendor\":\"Mechanic\",\"priceRUB\":900}]",
+      "caliber": "Caliber556x45NATO",
+      "penetrationPower": 53,
+      "damage": 45,
+      "armorDamage": 72,
+      "fragmentationChance": 0.2,
+      "ammoType": "bullet",
+      "projectileCount": 1,
+      "initialSpeed": 927
+    },
+    {
+      "id": "5c0d688c86f77413ae3407b2",
+      "name": "LEDX Skin Transilluminator",
+      "shortName": "LEDX",
+      "description": "A rare and valuable medical item.",
+      "category": "Medical",
+      "types": "[\"barter\"]",
+      "basePrice": 18069,
+      "weight": 0.1,
+      "avg24hPrice": 950000,
+      "lastLowPrice": 920000,
+      "sellFor": "[{\"vendor\":\"Therapist\",\"priceRUB\":700000}]",
+      "caliber": null,
+      "penetrationPower": null,
+      "damage": null,
+      "armorDamage": null,
+      "fragmentationChance": null,
+      "ammoType": null,
+      "projectileCount": null,
+      "initialSpeed": null
+    }
+  ],
+  "maps": [
+    {
+      "id": "5714dbc024597771384a510d",
+      "name": "Reserve",
+      "description": "A large military base with underground bunkers and helicopter pad.",
+      "enemies": "Scavs, Raiders, Rogue Bosses",
+      "raidDuration": 35,
+      "players": "3-9",
+      "minPlayerLevel": 0,
+      "extracts": "[{\"name\":\"D-2\",\"faction\":\"pmc\"},{\"name\":\"Scav Lands\",\"faction\":\"scav\"}]"
+    }
+  ],
+  "quests": [
+    {
+      "id": "5c51aac186f77432ea65c552",
+      "name": "Survivalist Path - Unprotected But Dangerous",
+      "trader": "Jaeger",
+      "objectives": "Survive 2 raids on Reserve; Kill 5 Scavs on Reserve",
+      "map": "Reserve",
+      "minPlayerLevel": 10,
+      "kappaRequired": 0,
+      "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Survivalist_Path_-_Unprotected_But_Dangerous",
+      "objectivesJson": "[{\"type\":\"experience\",\"description\":\"Survive 2 raids on Reserve\",\"optional\":false},{\"type\":\"kill\",\"description\":\"Kill 5 Scavs on Reserve\",\"optional\":false}]",
+      "requirements": ""
+    }
+  ]
+}

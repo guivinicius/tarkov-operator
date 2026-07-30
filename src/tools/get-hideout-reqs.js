@@ -1,4 +1,5 @@
 const dataStore = require("../data-store");
+const logger = require("../logger");
 
 const schema = {
   name: "get_hideout_requirements",
@@ -13,9 +14,9 @@ const schema = {
 };
 
 async function handler(args) {
-  console.log(`[tool:get_hideout_requirements] module="${args.module_name}"`);
+  logger.debug(`[tool:get_hideout_requirements] module="${args.module_name}"`);
   const rows = dataStore.searchHideout(args.module_name);
-  console.log(`[tool:get_hideout_requirements] found=${rows.length}`);
+  logger.debug(`[tool:get_hideout_requirements] found=${rows.length}`);
   if (rows.length === 0) return "No hideout modules found.";
   return rows.map((m) => `${m.name}: ${m.requirements}`).join("\n");
 }

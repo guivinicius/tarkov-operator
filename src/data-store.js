@@ -70,6 +70,11 @@ function createTables() {
       value TEXT,
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
 
   // FTS5 virtual tables
@@ -212,6 +217,31 @@ function clearMemory() {
   db.prepare("DELETE FROM user_memory").run();
 }
 
+// --- Settings ---
+
+function setSetting(key, value) {
+  db.prepare(
+    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)"
+  ).run(key, JSON.stringify(value));
+}
+
+function getSetting(key) {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
+  if (!row) return null;
+  try { return JSON.parse(row.value); }
+  catch { return row.value; }
+}
+
+function getAllSettings() {
+  const rows = db.prepare("SELECT key, value FROM settings").all();
+  const obj = {};
+  for (const r of rows) {
+    try { obj[r.key] = JSON.parse(r.value); }
+    catch { obj[r.key] = r.value; } // plain string from old format
+  }
+  return obj;
+}
+
 function searchHideout(query) {
   const term = `%${query}%`;
   return db.prepare(
@@ -300,4 +330,4 @@ function close() {
   if (db) { db.close(); db = null; }
 }
 
-module.exports = { init, insertItems, insertMaps, insertQuests, insertTraders, insertHideout, getStatus, fullTextSearch, searchHideout, clearAll, close, setMeta, getMeta, setMemory, getMemory, getAllMemory, deleteMemory, clearMemory };
+module.exports = { init, insertItems, insertMaps, insertQuests, insertTraders, insertHideout, getStatus, fullTextSearch, searchHideout, clearAll, close, setMeta, getMeta, setMemory, getMemory, getAllMemory, deleteMemory, clearMemory, setSetting, getSetting, getAllSettings };

@@ -1,19 +1,8 @@
 const fs = require("fs");
 const path = require("path");
+const dataStore = require("./data-store");
 
 let userDataPath = null;
-
-function getFilePath() {
-  return path.join(userDataPath, "settings.json");
-}
-
-function init(appPath) {
-  userDataPath = appPath;
-  const filePath = getFilePath();
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify(getDefaults(), null, 2));
-  }
-}
 
 function getDefaults() {
   return {
@@ -34,21 +23,32 @@ function getDefaults() {
   };
 }
 
-function load() {
+function migrateFromJson(jsonPath) {
   try {
-    const filePath = getFilePath();
-    if (!fs.existsSync(filePath)) return getDefaults();
-    return { ...getDefaults(), ...JSON.parse(fs.readFileSync(filePath, "utf-8")) };
-  } catch {
-    return getDefaults();
-  }
+    if (fs.existsSync(jsonPath)) {
+      const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+      for (const [key, value] of Object.entries(raw)) {
+        dataStore.setSetting(key, value);
+      }
+      fs.renameSync(jsonPath, jsonPath + ".bak");
+    }
+  } catch {}
+}
+
+function init(appPath) {
+  userDataPath = appPath;
+  migrateFromJson(path.join(appPath, "settings.json"));
+}
+
+function load() {
+  return { ...getDefaults(), ...dataStore.getAllSettings() };
 }
 
 function save(partial) {
-  const current = load();
-  const updated = { ...current, ...partial };
-  fs.writeFileSync(getFilePath(), JSON.stringify(updated, null, 2));
-  return updated;
+  for (const [key, value] of Object.entries(partial)) {
+    dataStore.setSetting(key, value);
+  }
+  return load();
 }
 
 module.exports = { init, load, save };

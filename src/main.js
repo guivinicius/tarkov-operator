@@ -56,6 +56,13 @@ function log(level, message) {
   }
 }
 
+// Pipe console.log from all modules (agent, llm, rag, tools) into IPC log
+const origLog = console.log;
+console.log = function (...args) {
+  origLog.apply(console, args);
+  log("info", args.map((a) => typeof a === "string" ? a : JSON.stringify(a)).join(" "));
+};
+
 // --- PTT Loop -------------------------------------------------------------
 
 function processPipeline(audioBuffer) {
@@ -317,7 +324,7 @@ async function fetchSTTModels(provider, apiKey) {
   return [];
 }
 
-async function fetchTTSVoices(provider, apiKey) {
+async function fetchTTSVoices(provider, apiKey, model) {
   if (provider === "elevenlabs") {
     try {
       const data = await fetchJSON("https://api.elevenlabs.io/v1/voices", {});
@@ -329,17 +336,28 @@ async function fetchTTSVoices(provider, apiKey) {
       return [];
     }
   }
-  if (provider === "openrouter") {
+  if (provider === "openrouter" && model) {
+    try {
+      const data = await fetchJSON(
+        `https://openrouter.ai/api/v1/models/${encodeURIComponent(model)}`,
+        apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
+      );
+      const voices = data.data?.supported_voices;
+      if (voices && voices.length > 0) {
+        return voices.map((v) => ({ id: v, name: v }));
+      }
+    } catch {}
+    // fallback to standard OpenAI voices
     return [
-      { id: "alloy", name: "Alloy (balanced, neutral)" },
-      { id: "echo", name: "Echo (deep, resonant)" },
-      { id: "fable", name: "Fable (British, warm)" },
-      { id: "nova", name: "Nova (female, clear)" },
-      { id: "shimmer", name: "Shimmer (warm, bright)" },
-      { id: "coral", name: "Coral (bright, energetic)" },
-      { id: "sage", name: "Sage (calm, gentle)" },
-      { id: "ash", name: "Ash (masculine, deep)" },
-      { id: "ballad", name: "Ballad (soft, melodic)" },
+      { id: "alloy", name: "alloy" },
+      { id: "echo", name: "echo" },
+      { id: "fable", name: "fable" },
+      { id: "nova", name: "nova" },
+      { id: "shimmer", name: "shimmer" },
+      { id: "coral", name: "coral" },
+      { id: "sage", name: "sage" },
+      { id: "ash", name: "ash" },
+      { id: "ballad", name: "ballad" },
     ];
   }
   return [];
@@ -487,10 +505,10 @@ ipcMain.handle("fetch-models", async (_event, category, provider, apiKey, baseUR
   }
 });
 
-ipcMain.handle("fetch-voices", async (_event, provider, apiKey) => {
+ipcMain.handle("fetch-voices", async (_event, provider, apiKey, model) => {
   try {
     if (provider === "local") return await fetchLocalTTSVoices();
-    return await fetchTTSVoices(provider, apiKey);
+    return await fetchTTSVoices(provider, apiKey, model);
   } catch (err) {
     return { error: err.message };
   }
@@ -565,6 +583,23 @@ ipcMain.handle("clear-memory", () => {
   catch (err) { return { error: err.message }; }
 });
 
+ipcMain.handle("test-tts", async (_event, opts) => {
+  try {
+    const testPhrase = "Operator, this is a voice test. Radio check, how copy?";
+    const result = await tts.synthesize(testPhrase, {
+      provider: opts.provider || "local",
+      apiKey: opts.apiKey || "",
+      voice: opts.voice || undefined,
+      model: opts.model || undefined,
+    });
+    await audioPlayback.playBuffer(result.audio, result.format);
+    return { ok: true };
+  } catch (err) {
+    log("error", `[tts-test] ${err.message}`);
+    return { error: err.message };
+  }
+});
+
 ipcMain.handle("check-dependency", async (_event, name) => {
   if (name === "sox") {
     const installed = audioCapture.isSoxInstalled();
@@ -584,8 +619,8 @@ ipcMain.handle("check-dependency", async (_event, name) => {
 // --- App lifecycle --------------------------------------------------------
 
 app.whenReady().then(() => {
-  settingsStore.init(app.getPath("userData"));
   dataStore.init(app.getPath("userData"));
+  settingsStore.init(app.getPath("userData"));
   createTray();
   openSettingsWindow();
 

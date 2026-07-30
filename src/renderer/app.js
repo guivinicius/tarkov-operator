@@ -21,7 +21,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const firstRun = $("first-run");
   const firstRunPtt = $("first-run-ptt");
   const homeDesc = $("home-desc");
+  const homeDescPtt = $("home-desc-ptt");
+  const sttSummary = $("stt-summary");
+  const pttKeySelect = $("input-PTT_KEY");
 
+  let operatorEnabled = false;
   const refreshLlm = $("refresh-llm-models");
   const refreshTts = $("refresh-tts-voices");
   const refreshTtsModels = $("refresh-tts-models");
@@ -105,6 +109,53 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const NEEDS_KEY_MESSAGE = "Add a key in Providers first";
+
+  const LLM_PROVIDER_LABELS = {
+    openrouter: "OpenRouter",
+    openai: "OpenAI",
+    anthropic: "Anthropic",
+    ollama: "Ollama",
+  };
+
+  const STT_SUMMARIES = {
+    openrouter: "Your voice is transcribed with the OpenRouter key you already added.",
+    "whisper-api": "Your voice is transcribed by Whisper.",
+    elevenlabs: "Your voice is transcribed by ElevenLabs.",
+    local: "Your voice is transcribed on this machine by local Whisper.",
+  };
+
+  // Read from the live input rather than saved settings so gating reacts to
+  // typing. Saved password fields keep their value in dataset, not in .value.
+  function keyValue(keyName) {
+    const el = $(`input-${keyName}`);
+    if (!el) return "";
+    return (el.value || el.dataset.originalValue || "").trim();
+  }
+
+  function requiredCredential() {
+    const provider = llmProvider.value || "openrouter";
+    const label = LLM_PROVIDER_LABELS[provider] || provider;
+    if (provider === "ollama") return { provider, label, satisfied: true };
+    return { provider, label, satisfied: Boolean(keyValue(`${provider.toUpperCase()}_API_KEY`)) };
+  }
+
+  function refreshOperatorGate() {
+    const credential = requiredCredential();
+    // An already-running operator must always be switchable off.
+    const blocked = !operatorEnabled && !credential.satisfied;
+    toggleBtn.disabled = blocked;
+    if (blocked) toggleBtn.title = `Add your ${credential.label} key in Providers first`;
+    else toggleBtn.removeAttribute("title");
+  }
+
+  function setPttLabels(key) {
+    firstRunPtt.textContent = key;
+    homeDescPtt.textContent = key;
+  }
+
+  function updateSttSummary() {
+    sttSummary.textContent = STT_SUMMARIES[sttProvider.value] || STT_SUMMARIES.openrouter;
+  }
 
   // needsKey reflects whether the provider is usable, not whether its
   // listing endpoint is public — OpenRouter and ElevenLabs list without auth.
@@ -282,27 +333,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function refreshHomeStatus() {
     const settings = await window.operator.getSettings();
-    const configured = [];
-    const missing = [];
-    const providers = [
-      { key: "OPENROUTER_API_KEY", label: "OpenRouter" },
-      { key: "OPENAI_API_KEY", label: "OpenAI" },
-      { key: "ANTHROPIC_API_KEY", label: "Anthropic" },
-      { key: "ELEVENLABS_API_KEY", label: "ElevenLabs" },
-      { key: "WHISPER_API_KEY", label: "Whisper API" },
-    ];
-    for (const p of providers) {
-      if (settings[p.key]) configured.push(p.label);
-      else missing.push(p.label);
-    }
+    const credential = requiredCredential();
 
-    const isFirstRun = !settings.OPENROUTER_API_KEY;
-    firstRun.classList.toggle("hidden", !isFirstRun);
-    homeDesc.classList.toggle("hidden", isFirstRun);
-    firstRunPtt.textContent = settings.PTT_KEY || "F1";
+    // First run is "cannot run yet", not "hasn't filled every field".
+    firstRun.classList.toggle("hidden", credential.satisfied);
+    homeDesc.classList.toggle("hidden", !credential.satisfied);
+    setPttLabels(settings.PTT_KEY || "F1");
 
     const status = await window.operator.getStatus();
-    homeStatusText.textContent = `Operator: ${status.enabled ? "Active" : "Idle"} · Keys: ${configured.length} configured, ${missing.length} missing`;
+    const state = status.enabled ? "Active" : "Idle";
+    homeStatusText.textContent = credential.satisfied
+      ? `Operator: ${state} · Connected via ${credential.label}`
+      : `Operator: ${state} · Not connected`;
+
+    refreshOperatorGate();
   }
 
   async function fetchGameData() {
@@ -333,6 +377,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function updateUI(enabled) {
+    operatorEnabled = enabled;
     if (enabled) {
       statusIndicator.className = "indicator active";
       statusText.textContent = "Active";
@@ -344,6 +389,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       toggleBtn.textContent = "Enable Operator";
       toggleBtn.classList.remove("active");
     }
+    refreshOperatorGate();
   }
 
   function appendLog(entry) {
@@ -376,6 +422,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Init ---
 
   updateFieldVisibility();
+  updateSttSummary();
   await refreshAllProviderLists();
   refreshDataStatus();
   refreshHomeStatus();
@@ -411,6 +458,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   sttProvider.addEventListener("change", async () => {
     updateFieldVisibility();
+    updateSttSummary();
     await fetchAndPopulateModels("stt", sttProvider, sttModel, sttStatus);
     updateLocalSttCommand();
     await saveSettings(["STT_PROVIDER", "STT_MODEL"]);
@@ -470,6 +518,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       el.addEventListener("input", () => {
         el.dataset.modified = "true";
         clearValidateStatus(key);
+        refreshOperatorGate();
       });
       el.addEventListener("blur", async () => {
         if (el.dataset.modified) {
@@ -566,10 +615,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshMemory();
   });
 
-  const pttKeySelect = $("input-PTT_KEY");
   pttKeySelect.addEventListener("change", async () => {
     await saveSettings(["PTT_KEY"]);
-    firstRunPtt.textContent = pttKeySelect.value;
+    setPttLabels(pttKeySelect.value);
     if (toggleBtn.textContent === "Disable Operator") {
       await window.operator.toggle();
       await window.operator.toggle();

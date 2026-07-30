@@ -5,6 +5,7 @@
   "main": "src/main.js",
   "license": "MIT",
   "author": "Guilherme Vinicius Moreira",
+  "repository": "github:guivinicius/tarkov-operator",
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
@@ -25,6 +26,7 @@
   "build": {
     "appId": "com.tarkov-operator.desktop",
     "productName": "Tarkov Operator",
+    "asarUnpack": ["node_modules/better-sqlite3/**"],
     "files": [
       "src/**/*",
       "node_modules/**/*"

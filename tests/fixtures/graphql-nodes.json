@@ -1,0 +1,88 @@
+{
+  "ammoItem": {
+    "id": "ammo-5.56x45-m995",
+    "name": "5.56x45mm M995",
+    "shortName": "M995",
+    "description": "M995 armor-piercing round for AR platforms.",
+    "basePrice": 1800,
+    "weight": 0.009,
+    "categories": [{ "name": "Ammo" }],
+    "types": ["ammo"],
+    "avg24hPrice": 1200,
+    "lastLowPrice": 1050,
+    "sellFor": [
+      { "vendor": { "name": "Prapor" }, "priceRUB": 900 },
+      { "vendor": { "name": "Flea Market" }, "priceRUB": 1200 }
+    ],
+    "properties": {
+      "__typename": "ItemPropertiesAmmo",
+      "caliber": "Caliber556x45NATO",
+      "damage": 40,
+      "armorDamage": 62,
+      "penetrationPower": 37,
+      "penetrationChance": 0.62,
+      "fragmentationChance": 0.5,
+      "ricochetChance": 0.1,
+      "ammoType": "bullet",
+      "projectileCount": 1,
+      "initialSpeed": 910
+    }
+  },
+  "nonAmmoItem": {
+    "id": "item-ledx",
+    "name": "LEDX Skin Transilluminator",
+    "shortName": "LEDX",
+    "description": "A rare medical device.",
+    "basePrice": 18069,
+    "weight": 0.1,
+    "categories": [{ "name": "Medical supplies" }],
+    "types": ["medical"],
+    "avg24hPrice": 950000,
+    "lastLowPrice": 920000,
+    "sellFor": [
+      { "vendor": { "name": "Therapist" }, "priceRUB": 700000 }
+    ],
+    "properties": null
+  },
+  "mapNode": {
+    "id": "map-reserve",
+    "name": "Reserve",
+    "description": "Military reserve base.",
+    "enemies": ["Raiders", "Gluhar"],
+    "raidDuration": 40,
+    "players": "3-9",
+    "minPlayerLevel": 0,
+    "extracts": [
+      { "id": "ext-d2", "name": "D-2", "faction": "pmc" },
+      { "id": "ext-scav-cl", "name": "Scav Lands", "faction": "scav" }
+    ]
+  },
+  "taskNode": {
+    "id": "task-collector",
+    "name": "Collector",
+    "trader": { "name": "Fence" },
+    "map": { "name": "Any" },
+    "minPlayerLevel": 71,
+    "kappaRequired": true,
+    "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Collector",
+    "objectives": [
+      {
+        "id": "obj-1",
+        "type": "gatherItem",
+        "description": "Hand over Golden 1GPhone smartphone",
+        "optional": false,
+        "maps": [{ "name": "Any" }]
+      },
+      {
+        "id": "obj-2",
+        "type": "gatherItem",
+        "description": "Hand over Alyonka chocolate bar",
+        "optional": false,
+        "maps": []
+      }
+    ],
+    "taskRequirements": [
+      { "task": { "name": "Regulated Materials" } }
+    ]
+  }
+}

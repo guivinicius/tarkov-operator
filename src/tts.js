@@ -49,6 +49,30 @@ async function synthesizeElevenLabs(text, opts = {}) {
   });
 }
 
+function pcmToWav(pcmData) {
+  const sampleRate = 24000;
+  const bitsPerSample = 16;
+  const numChannels = 1;
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = pcmData.length;
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(numChannels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write("data", 36);
+  header.writeUInt32LE(dataSize, 40);
+  return Buffer.concat([header, pcmData]);
+}
+
 async function synthesizeOpenRouter(text, opts = {}) {
   const apiKey = opts.apiKey;
   if (!apiKey) throw new Error("OpenRouter API key required for TTS");
@@ -61,7 +85,7 @@ async function synthesizeOpenRouter(text, opts = {}) {
       model,
       input: text,
       voice,
-      response_format: "mp3",
+      response_format: "pcm",
     });
 
     const req = https.request(
@@ -137,9 +161,10 @@ async function synthesize(text, opts = {}) {
 
   if (provider === "openrouter") {
     const t0 = performance.now();
-    const audio = await synthesizeOpenRouter(text, opts);
+    const pcm = await synthesizeOpenRouter(text, opts);
+    const audio = pcmToWav(pcm);
     const latency = (performance.now() - t0) / 1000;
-    return { audio, format: "mp3", latency };
+    return { audio, format: "wav", latency };
   }
 
   if (provider === "elevenlabs") {

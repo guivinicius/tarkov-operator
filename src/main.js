@@ -1,10 +1,11 @@
 const {
-  app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut,
+  app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut, Notification
 } = require("electron");
 
 // Ensure consistent userData path between dev and production builds.
 // package.json name (dev) differs from electron-builder productName (prod).
 app.setName("Tarkov Operator");
+app.setAppUserModelId("com.tarkov-operator.desktop");
 
 const path = require("path");
 const https = require("https");
@@ -21,6 +22,7 @@ const settingsStore = require("./settings-store");
 const dataStore = require("./data-store");
 const tarkovDev = require("./tarkov-dev");
 const agent = require("./agent");
+const logger = require("./logger");
 
 // --- State ----------------------------------------------------------------
 let tray = null;
@@ -56,12 +58,12 @@ function log(level, message) {
   }
 }
 
-// Pipe console.log from all modules (agent, llm, rag, tools) into IPC log
-const origLog = console.log;
-console.log = function (...args) {
-  origLog.apply(console, args);
-  log("info", args.map((a) => typeof a === "string" ? a : JSON.stringify(a)).join(" "));
-};
+logger.setSink((entry) => {
+  logs.push(entry);
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send("log", entry);
+  }
+});
 
 // --- PTT Loop -------------------------------------------------------------
 
@@ -124,7 +126,15 @@ function processPipeline(audioBuffer) {
     await audioPlayback.playBuffer(ttsResult.audio, ttsResult.format);
     log("info", "[play] Done");
   }).catch((err) => {
-    log("error", `[error] ${err.message}`);
+    logger.error(`[error] ${err.message}`);
+    new Notification({ title: "Tarkov Operator", body: err.hint || err.message }).show();
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.webContents.send("pipeline-error", {
+        message: err.message,
+        hint: err.hint,
+        time: Date.now()
+      });
+    }
   });
 }
 
@@ -136,7 +146,17 @@ function enablePTT() {
 
   if (s.LLM_PROVIDER !== "ollama" && !llmApiKey(s)) {
     const keyName = `${s.LLM_PROVIDER.toUpperCase()}_API_KEY`;
-    log("error", `${keyName} not set. Add it in the Providers tab.`);
+    const msg = `${keyName} not set.`;
+    const hint = "Add your API key in the Providers tab.";
+    logger.error(msg);
+    new Notification({ title: "Tarkov Operator", body: hint }).show();
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.webContents.send("pipeline-error", {
+        message: msg,
+        hint: hint,
+        time: Date.now()
+      });
+    }
     return;
   }
 

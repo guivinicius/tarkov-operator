@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld("operator", {
     return () => ipcRenderer.removeListener("status-changed", h);
   },
 
+  onPipelineError: (cb) => {
+    const h = (_e, err) => cb(err);
+    ipcRenderer.on("pipeline-error", h);
+    return () => ipcRenderer.removeListener("pipeline-error", h);
+  },
+
   newSession: () => ipcRenderer.invoke("new-session"),
 
   getDataStatus: () => ipcRenderer.invoke("get-data-status"),

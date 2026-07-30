@@ -492,6 +492,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   window.operator.onStatusChange((s) => updateUI(s.enabled));
 
+  // --- Pipeline Error ---
+  const homeError = $("home-error");
+  window.operator.onPipelineError((err) => {
+    homeError.textContent = err.hint || err.message;
+    homeError.classList.remove("hidden");
+    switchTab("home");
+  });
+
   // --- Logs ---
 
   window.operator.onLog((entry) => appendLog(entry));

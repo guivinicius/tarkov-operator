@@ -1,4 +1,6 @@
 const OpenAI = require("openai");
+const { ProviderError } = require("./errors");
+const logger = require("./logger");
 
 const conversationHistory = [];
 
@@ -57,10 +59,10 @@ async function ask(userMessage, opts = {}) {
     { role: "user", content: userMessage },
   ];
 
-  console.log(`[llm] sys_prompt=${systemContent.length}chars history=${conversationHistory.length}msgs tools=${opts.tools?.length || 0}`);
+  logger.debug(`[llm] sys_prompt=${systemContent.length}chars history=${conversationHistory.length}msgs tools=${opts.tools?.length || 0}`);
   if (opts.tools?.length > 0) {
     for (const t of opts.tools) {
-      console.log(`[llm] tool_def: ${t.name} params=${JSON.stringify(t.parameters || {}).length}chars`);
+      logger.debug(`[llm] tool_def: ${t.name} params=${JSON.stringify(t.parameters || {}).length}chars`);
     }
   }
 
@@ -85,17 +87,18 @@ async function ask(userMessage, opts = {}) {
     response = await client.chat.completions.create(completionOpts);
   } catch (err) {
     const msg = err.message || String(err);
-    console.log(`[llm] api_error="${msg}"`);
-    return {
-      text: "",
-      raw: "",
-      latency: (performance.now() - t0) / 1000,
-      finishReason: "error",
-      toolCalls: null,
-      model,
-      promptTokens: 0,
-      completionTokens: 0,
-    };
+    logger.debug(`[llm] api_error="${msg}"`);
+    
+    let hint = "";
+    if (err.status === 401 || err.status === 403) {
+      hint = "Check your API key in the Providers tab.";
+    }
+    
+    throw new ProviderError(msg, {
+      provider: "llm",
+      status: err.status,
+      hint
+    });
   }
 
   const latency = (performance.now() - t0) / 1000;
@@ -106,14 +109,14 @@ async function ask(userMessage, opts = {}) {
   const finishReason = choice?.finish_reason || "unknown";
   const usage = response.usage || {};
 
-  console.log(`[llm] finish=${finishReason} latency=${latency.toFixed(1)}s pt=${usage.prompt_tokens} ct=${usage.completion_tokens}`);
+  logger.debug(`[llm] finish=${finishReason} latency=${latency.toFixed(1)}s pt=${usage.prompt_tokens} ct=${usage.completion_tokens}`);
   if (toolCalls?.length > 0) {
-    console.log(`[llm] tool_calls=${toolCalls.length}`);
+    logger.debug(`[llm] tool_calls=${toolCalls.length}`);
     for (const tc of toolCalls) {
-      console.log(`[llm] tool_call: ${tc.function.name}(${tc.function.arguments})`);
+      logger.debug(`[llm] tool_call: ${tc.function.name}(${tc.function.arguments})`);
     }
   }
-  if (rawContent) console.log(`[llm] text="${rawContent.replace(/\n/g, "\\n").slice(0, 300)}"`);
+  if (rawContent) logger.debug(`[llm] text="${rawContent.replace(/\n/g, "\\n").slice(0, 300)}"`);
 
   if (toolCalls?.length > 0) {
     conversationHistory.push({

@@ -1,0 +1,18 @@
+{
+  "data": [
+    {
+      "id": "openai/gpt-4o-tools",
+      "name": "GPT-4o (Tools)",
+      "description": "A model that declares tool support",
+      "context_length": 128000,
+      "supported_parameters": ["tools", "temperature", "max_tokens", "top_p"]
+    },
+    {
+      "id": "meta/llama-no-tools",
+      "name": "Llama (No Tools)",
+      "description": "A model that does not declare tool support",
+      "context_length": 8192,
+      "supported_parameters": ["temperature", "max_tokens"]
+    }
+  ]
+}

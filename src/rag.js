@@ -2,6 +2,7 @@
 // Queries SQLite FTS5 with the user's question and formats results as LLM context.
 
 const dataStore = require("./data-store");
+const logger = require("./logger");
 
 function formatResults(results) {
   const items = results.filter((r) => r.type === "item").slice(0, 5);
@@ -40,11 +41,11 @@ function formatResults(results) {
 }
 
 async function search(userText) {
-  console.log(`[rag] query="${userText}"`);
+  logger.debug(`[rag] query="${userText}"`);
   const results = dataStore.fullTextSearch(userText, 11);
-  console.log(`[rag] fts5_results=${results.length} items=${results.filter(r=>r.type==="item").length} maps=${results.filter(r=>r.type==="map").length} quests=${results.filter(r=>r.type==="quest").length}`);
+  logger.debug(`[rag] fts5_results=${results.length} items=${results.filter(r=>r.type==="item").length} maps=${results.filter(r=>r.type==="map").length} quests=${results.filter(r=>r.type==="quest").length}`);
   const formatted = formatResults(results);
-  if (formatted) console.log(`[rag] context_size=${formatted.length}chars`);
+  if (formatted) logger.debug(`[rag] context_size=${formatted.length}chars`);
   return formatted;
 }
 

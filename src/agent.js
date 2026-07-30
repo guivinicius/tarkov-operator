@@ -98,7 +98,10 @@ async function process(userText, opts = {}) {
   }
 
   // 5. Agent loop
-  const toolsEnabled = retrieval === "tools" && activeSchemas.length > 0;
+  // activeSchemas already encodes the routing decision: the full set when tools
+  // are the retrieval path, memory-only otherwise. Gating on retrieval here too
+  // would discard the memory tools a local model is meant to keep.
+  const toolsEnabled = activeSchemas.length > 0;
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     logger.debug(`[agent] iteration=${i + 1}/${MAX_ITERATIONS} tools=${toolsEnabled}`);
     const llmOpts = {

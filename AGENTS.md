@@ -8,29 +8,36 @@ capture mic → STT → LLM → TTS → speak.
 - **Runtime:** Electron (Node.js)
 - **UI:** Vanilla HTML/CSS/JS (no framework)
 - **LLM:** OpenAI-compatible (OpenRouter, OpenAI, Anthropic, Ollama)
-- **STT:** Whisper API, OpenRouter, ElevenLabs, local Whisper
-- **TTS:** ElevenLabs, OpenRouter, system TTS (say/SAPI/espeak)
+- **STT:** Whisper API, OpenRouter, ElevenLabs
+- **TTS:** ElevenLabs, OpenRouter, system TTS (say/SAPI)
 - **Data:** SQLite + FTS5 from tarkov.dev + RAG context injection
 
 ## Project Structure
 
 ```
 src/
-├── main.js               # Electron main: tray, PTT loop, IPC handlers, provider API
+├── main.js               # Electron main: tray, PTT loop, IPC handlers
 ├── preload.js            # contextBridge IPC API
-├── settings-store.js     # JSON settings persistence
+├── settings-store.js     # SQLite settings persistence
+├── agent.js              # Retrieval routing and tool orchestration
 ├── llm.js                # LLM client + conversation history
-├── stt.js                # STT (Whisper API, OpenRouter, ElevenLabs, local)
+├── stt.js                # STT (Whisper API, OpenRouter, ElevenLabs)
 ├── tts.js                # TTS (ElevenLabs, OpenRouter, system)
-├── audio-capture.js      # Mic via SoX rec
+├── audio-capture.js      # Mic capture host (hidden renderer)
 ├── audio-playback.js     # Playback via platform player
 ├── data-store.js         # SQLite + FTS5 game data cache
 ├── tarkov-dev.js         # GraphQL client for tarkov.dev
 ├── rag.js                # RAG context from cached data
+├── errors.js             # Typed ProviderError definitions
+├── logger.js             # Centralized logging sink
+├── model-caps.js         # Model capability detection (tools vs RAG)
+├── fts-query.js          # FTS5 query builder (stopword stripping)
+├── tools/                # Speech-shaped tools (ammo, items, quests, maps)
 └── renderer/
-    ├── index.html         # Settings UI (7 tabs)
+    ├── index.html         # Settings UI (8 tabs)
     ├── styles.css
-    └── app.js
+    ├── app.js             # UI logic
+    └── capture.*          # Hidden capture renderer files
 .github/workflows/
 └── release.yml           # Build macOS + Windows on tag push
 ```
@@ -41,6 +48,7 @@ src/
 |---|---|
 | `npm start` | Launch production |
 | `npm run dev` | Launch + DevTools |
+| `npm test` | Run test suite (requires Electron ABI) |
 | `npm run build:mac` | Package macOS .dmg |
 | `npm run build:win` | Package Windows .exe |
 
@@ -52,51 +60,36 @@ src/
 ## Architecture
 
 ### PTT Pipeline
-1. `globalShortcut` detects PTT key → SoX rec subprocess
-2. Release (silence/retap) → stop rec, get WAV buffer
-3. Buffer → `stt.transcribe()` → `llm.ask()` → `tts.synthesize()`
+1. `globalShortcut` detects PTT key tap → `audioCapture.startCapture()`
+2. Hidden renderer captures via `getUserMedia` → silence auto-stop or second tap cancel
+3. Buffer → `stt.transcribe()` → `agent.process()` → `tts.synthesize()`
 4. Output → `audioPlayback.playBuffer()`
 
-### Conversation History (`llm.js`)
-- `llm.js` maintains an in-memory `conversationHistory` array
-- Each `ask()` call injects past exchanges between system prompt and current user message
-- Capped at 15 exchanges (30 messages)
-- `newSession()` clears array (via IPC from renderer)
+### Retrieval Strategy
+- **Tools:** Primary path for models supporting `tools` in `supported_parameters`.
+- **RAG:** Fallback for models without tool support (local/Ollama).
+- **Tools List:** `ammo_vs_armor`, `item_value`, `quest_info`, `map_info`, `get_hideout_requirements`, `remember_fact`, `recall_fact`.
+
+### Data Layer
+- **SQLite:** Stores game data, settings, and user memory.
+- **Versioning:** `SCHEMA_VERSION` mismatch drops game-data tables only. Settings and memory always survive.
+- **Seeding:** Ships with a bundled `data/snapshot.json` for offline-first startup.
 
 ### Settings
-- JSON file in `app.getPath("userData")/settings.json`
-- Per-provider API keys only in **Providers** tab
-- All fields auto-save on change/blur (password fields use dirty tracking)
+- Stored in the `settings` table in the app's SQLite database.
+- Old `settings.json` is auto-migrated to `.bak` on first run.
+- All fields auto-save on change or blur.
 
-### Key Derivation (main.js)
-- `llmApiKey(s)` — maps LLM_PROVIDER → correct key name
-- `sttApiKey(s)` — maps STT_PROVIDER → correct key name
-
-### IPC API
-| Method | Returns | Description |
-|---|---|---|
-| `getStatus()` | `{ enabled }` | PTT active? |
-| `toggle()` | `{ enabled }` | Enable/disable |
-| `getLogs()` | `LogEntry[]` | Recent logs |
-| `getSettings()` | `Settings` | Current settings |
-| `updateSettings(s)` | `{ ok }` | Save settings |
-| `newSession()` | `{ ok }` | Clear LLM history |
-| `fetchModels(c, p, k, u)` | `Model[]` | Fetch provider models |
-| `fetchVoices(p, k)` | `Voice[]` | Fetch TTS voices |
-| `getDataStatus()` | `Status` | SQLite cache stats |
-| `fetchGameData(p)` | `{ ok }` | Fetch from tarkov.dev |
-| `clearGameData()` | `{ ok }` | Clear SQLite cache |
-| `checkDependency(n)` | `Status` | Check SoX install |
-| `onLog(cb)` | unsubscribe | Live log stream |
-| `onStatusChange(cb)` | unsubscribe | Status events |
-| `onDataUpdated(cb)` | unsubscribe | Data refresh events |
+### Error Handling
+- Failures surface as typed `ProviderError`.
+- Errors trigger a tray notification and a red banner on the Home tab.
+- No silent failures in the pipeline.
 
 ## Gotchas
 
-- **SoX required** for mic: `brew install sox` / `choco install sox.portable`
-- **better-sqlite3** compiled for Electron's Node.js — won't load in system Node.js
-- **tarkov.dev GraphQL:** Task has no description; hideoutStations not hideoutModules; Trader has no items
-- **OpenRouter free models** may be blocked by privacy guardrails: configure at openrouter.ai/settings/privacy
-- **ElevenLabs voices** fetched without auth (public endpoint — 21 premade voices)
-- **Password dirty tracking:** blur only saves if user actually typed (avoids accidental key clearing)
+- **No SoX required.** Microphone capture is handled in-process via Chromium.
+- **npm test** must run under Electron's Node ABI because `better-sqlite3` is compiled against it.
+- **tarkov.dev GraphQL:** Task has no description. Use objectives and requirements instead.
+- **OpenRouter free models** may be blocked by privacy guardrails.
+- **Unsigned builds:** Windows SmartScreen and macOS Gatekeeper will block the app by default.
 - **No Python.** Everything is Node.js.

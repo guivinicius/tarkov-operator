@@ -10,8 +10,8 @@ contextBridge.exposeInMainWorld("operator", {
   fetchModels: (category, provider, apiKey, baseURL) =>
     ipcRenderer.invoke("fetch-models", category, provider, apiKey, baseURL),
 
-  fetchVoices: (provider, apiKey) =>
-    ipcRenderer.invoke("fetch-voices", provider, apiKey),
+  fetchVoices: (provider, apiKey, model) =>
+    ipcRenderer.invoke("fetch-voices", provider, apiKey, model),
 
   checkDependency: (name) =>
     ipcRenderer.invoke("check-dependency", name),
@@ -49,4 +49,6 @@ contextBridge.exposeInMainWorld("operator", {
   setMemory: (key, value) => ipcRenderer.invoke("set-memory", key, value),
   deleteMemory: (key) => ipcRenderer.invoke("delete-memory", key),
   clearMemory: () => ipcRenderer.invoke("clear-memory"),
+
+  testTTS: (opts) => ipcRenderer.invoke("test-tts", opts),
 });

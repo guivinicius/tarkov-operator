@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const llmStatus = $("llm-models-status");
   const ttsStatus = $("tts-voices-status");
   const ttsModelsStatus = $("tts-models-status");
+  const testTtsBtn = $("test-tts-btn");
+  const testTtsStatus = $("tts-test-status");
   const dataProgress = $("data-progress");
   const dataProgressText = $("data-progress-text");
   const dataProgressCurrent = $("data-progress-current");
@@ -53,12 +55,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === `tab-${tabId}`));
 
     if (tabId === "home") refreshHomeStatus();
-    if (tabId === "llm") fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus);
-    if (tabId === "voice") {
-      fetchAndPopulateModels("stt", sttProvider, sttModel, {});
-      fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
-      fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
-    }
     if (tabId === "data") refreshDataStatus();
     if (tabId === "memory") refreshMemory();
   }
@@ -120,7 +116,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (result.error) {
       statusEl.textContent = `Error: ${result.error}`;
-      setSelect(modelSelect, []);
       return;
     }
 
@@ -134,10 +129,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const provider = providerSelect.value;
     const settings = await window.operator.getSettings();
     let apiKey = "";
-    if (provider === "openrouter") apiKey = settings.OPENROUTER_API_KEY;
+    let model = "";
+    if (provider === "openrouter") {
+      apiKey = settings.OPENROUTER_API_KEY;
+      model = ttsModel.value;
+    }
 
     statusEl.textContent = "Loading...";
-    const result = await window.operator.fetchVoices(provider, apiKey);
+    const result = await window.operator.fetchVoices(provider, apiKey, model);
 
     if (result.error) {
       statusEl.textContent = `Error: ${result.error}`;
@@ -330,7 +329,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Init ---
 
   updateFieldVisibility();
-  fetchAndPopulateModels("stt", sttProvider, sttModel, {});
+  fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus);
+  fetchAndPopulateModels("stt", sttProvider, sttModel, ttsStatus);
+  fetchAndPopulateModels("tts", ttsProvider, ttsModel, ttsModelsStatus);
+  fetchAndPopulateVoices(ttsProvider, ttsVoice, ttsStatus);
   checkSox();
   refreshDataStatus();
   refreshHomeStatus();
@@ -391,6 +393,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   ttsVoice.addEventListener("change", async () => {
     await saveSettings(["TTS_VOICE"]);
+  });
+
+  testTtsBtn.addEventListener("click", async () => {
+    testTtsBtn.disabled = true;
+    testTtsStatus.textContent = "Playing...";
+    const settings = await window.operator.getSettings();
+    await window.operator.testTTS({
+      provider: settings.TTS_PROVIDER,
+      apiKey:
+        settings.TTS_PROVIDER === "openrouter" ? settings.OPENROUTER_API_KEY :
+        settings.TTS_PROVIDER === "elevenlabs" ? settings.ELEVENLABS_API_KEY : "",
+      voice: settings.TTS_VOICE,
+      model: settings.TTS_MODEL,
+    });
+    testTtsStatus.textContent = "Done";
+    testTtsBtn.disabled = false;
+    setTimeout(() => { testTtsStatus.textContent = ""; }, 3000);
   });
 
   $("input-LLM_BASE_URL").addEventListener("change", async () => {

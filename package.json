@@ -33,7 +33,10 @@
     ],
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.utilities"
+      "category": "public.app-category.utilities",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Tarkov Operator uses the microphone for push-to-talk questions."
+      }
     },
     "win": {
       "target": "nsis"

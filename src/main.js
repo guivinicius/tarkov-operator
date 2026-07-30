@@ -1,5 +1,6 @@
 const {
-  app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut, Notification
+  app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut, Notification,
+  systemPreferences, session
 } = require("electron");
 
 // Ensure consistent userData path between dev and production builds.
@@ -29,10 +30,9 @@ let tray = null;
 let settingsWindow = null;
 let isEnabled = false;
 const logs = [];
-  let pttTimer = null;
-let maxRecordTimer = null;
 let isRecording = false;
-let lastPttPress = 0;
+let captureHandlersBound = false;
+let micAccessRequested = false;
 
 function llmApiKey(s) {
   switch (s.LLM_PROVIDER) {
@@ -160,51 +160,74 @@ function enablePTT() {
     return;
   }
 
-  function stopCaptureAndProcess(reason) {
-    if (!isRecording) return;
-    isRecording = false;
-    clearTimeout(maxRecordTimer);
-    clearTimeout(pttTimer);
-    maxRecordTimer = null;
-    pttTimer = null;
-    log("info", reason ? `[ptt] ${reason}` : "[ptt] Processing...");
-    audioCapture.stopCapture();
-  }
+  if (!captureHandlersBound) {
+    captureHandlersBound = true;
 
-  const registered = globalShortcut.register(pttKey, () => {
-    const now = Date.now();
-    const elapsed = now - lastPttPress;
-    lastPttPress = now;
-
-    if (isRecording) {
-      if (elapsed < 500) {
-        // Fast repeat (<500ms) → user still holding → set silence timer
-        clearTimeout(pttTimer);
-        pttTimer = setTimeout(() => stopCaptureAndProcess("Release detected"), 400);
-      } else {
-        // New press (≥500ms gap) → tap again to stop (useful for function keys)
-        stopCaptureAndProcess("Key pressed again");
-      }
-      return;
-    }
-
-    // First keydown → start capture
-    isRecording = true;
     audioCapture.onCaptureComplete((buffer) => {
+      isRecording = false;
+      updateTrayMenu();
       if (buffer && buffer.length > 4800) {
         processPipeline(buffer);
       } else {
-        log("info", `[ptt] Buffer too short (${buffer?.length || 0}B), ignoring`);
+        log("info", `[ptt] Buffer too short (${buffer ? buffer.length : 0}B), ignoring`);
       }
     });
-    audioCapture.startCapture().catch((err) => {
-      log("error", `[capture] ${err.message}`);
-      isRecording = false;
-    });
-    log("info", "[ptt] Recording...");
 
-    // Safety max (30s) — for keys that don't auto-repeat
-    maxRecordTimer = setTimeout(() => stopCaptureAndProcess("Max duration (30s)"), 30000);
+    audioCapture.onCaptureEmpty(() => {
+      isRecording = false;
+      updateTrayMenu();
+      log("info", "[ptt] No speech detected, ignoring");
+    });
+
+    audioCapture.onCaptureError((err) => {
+      isRecording = false;
+      updateTrayMenu();
+      const hint = platform() === "darwin"
+        ? "Allow microphone access for Tarkov Operator in System Settings > Privacy & Security > Microphone."
+        : "Check that a microphone is connected and not in use by another app.";
+      logger.error(`[capture] ${err.message}`);
+      new Notification({ title: "Tarkov Operator", body: hint }).show();
+      if (settingsWindow && !settingsWindow.isDestroyed()) {
+        settingsWindow.webContents.send("pipeline-error", {
+          message: err.message,
+          hint,
+          time: Date.now(),
+        });
+      }
+    });
+  }
+
+  // Tap-to-talk, not hold-to-talk: globalShortcut has no key-release event, so
+  // inferring release from OS key auto-repeat behaved differently per keyboard.
+  const registered = globalShortcut.register(pttKey, async () => {
+    if (isRecording) {
+      isRecording = false;
+      log("info", "[ptt] Cancelled");
+      audioCapture.cancelCapture();
+      updateTrayMenu();
+      return;
+    }
+
+    if (platform() === "darwin" && !micAccessRequested) {
+      micAccessRequested = true;
+      try {
+        await systemPreferences.askForMediaAccess("microphone");
+      } catch (_) {
+        // Denial is surfaced by onCaptureError with remediation guidance.
+      }
+    }
+
+    isRecording = true;
+    updateTrayMenu();
+    log("info", "[ptt] Recording... (talk, then stop — it ends on silence)");
+
+    try {
+      await audioCapture.startCapture();
+    } catch (err) {
+      isRecording = false;
+      updateTrayMenu();
+      log("error", `[capture] ${err.message}`);
+    }
   });
 
   if (!registered) {
@@ -223,11 +246,8 @@ function disablePTT() {
   globalShortcut.unregisterAll();
   if (isRecording) {
     isRecording = false;
-    audioCapture.stopCapture();
+    audioCapture.cancelCapture();
   }
-  clearTimeout(pttTimer);
-  clearTimeout(maxRecordTimer);
-  maxRecordTimer = null;
   isEnabled = false;
   log("info", "Operator disabled.");
   updateTrayMenu();
@@ -622,16 +642,8 @@ ipcMain.handle("test-tts", async (_event, opts) => {
 
 ipcMain.handle("check-dependency", async (_event, name) => {
   if (name === "sox") {
-    const installed = audioCapture.isSoxInstalled();
-    const commands = {
-      darwin: "brew install sox",
-      win32: "choco install sox.portable",
-      linux: "apt install sox",
-    };
-    return {
-      installed,
-      command: commands[platform()] || "Install SoX from https://sox.sourceforge.net",
-    };
+    // SoX is no longer used; capture runs in-process via getUserMedia.
+    return { installed: true, command: "" };
   }
   return { installed: false, command: "" };
 });
@@ -641,6 +653,12 @@ ipcMain.handle("check-dependency", async (_event, name) => {
 app.whenReady().then(() => {
   dataStore.init(app.getPath("userData"));
   settingsStore.init(app.getPath("userData"));
+
+  // Without this, getUserMedia in the capture window is denied outright.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === "media");
+  });
+
   createTray();
   openSettingsWindow();
 

@@ -2,6 +2,7 @@ const llm = require("./llm");
 const tools = require("./tools/index");
 const rag = require("./rag");
 const dataStore = require("./data-store");
+const settingsStore = require("./settings-store");
 const logger = require("./logger");
 const modelCaps = require("./model-caps");
 
@@ -42,12 +43,20 @@ function chooseRetrieval(caps) {
 async function process(userText, opts = {}) {
   // 1. Memory profile — injected in ALL cases (not part of the RAG/tools tradeoff — D7)
   let memoryProfile = "";
+  let languageDirective = "";
   try {
+    const s = settingsStore.load();
+    if (s.VOICE_LANGUAGE === "pt-br") {
+      languageDirective = "\n[LANGUAGE]\nYou must speak and respond in Portuguese (pt-BR).\n[/LANGUAGE]\n";
+    }
+
     const allMemory = dataStore.getAllMemory();
-    logger.debug(`[agent] memory_entries=${allMemory.length}`);
-    if (allMemory.length > 0) {
+    // Filter out empty values so we don't send "Player Name: " to the LLM
+    const activeMemory = allMemory.filter(m => m.value && m.value.trim().length > 0);
+    logger.debug(`[agent] memory_entries=${activeMemory.length}`);
+    if (activeMemory.length > 0) {
       memoryProfile = "\n[USER PROFILE]\n" +
-        allMemory.map((m) => `${m.key}: ${m.value}`).join("\n") +
+        activeMemory.map((m) => `${m.key}: ${m.value}`).join("\n") +
         "\n[/USER PROFILE]\n";
     }
   } catch (e) { logger.debug(`[agent] memory_error=${e.message}`); }
@@ -96,6 +105,10 @@ async function process(userText, opts = {}) {
     systemPromptAppend += memoryProfile;
     logger.debug(`[agent] memory_injected=${memoryProfile.length}chars`);
   }
+  if (languageDirective) {
+    systemPromptAppend += languageDirective;
+    logger.debug(`[agent] language_directive_injected`);
+  }
 
   // 5. Agent loop
   // activeSchemas already encodes the routing decision: the full set when tools
@@ -105,6 +118,7 @@ async function process(userText, opts = {}) {
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     logger.debug(`[agent] iteration=${i + 1}/${MAX_ITERATIONS} tools=${toolsEnabled}`);
     const llmOpts = {
+      provider: opts.provider,
       apiKey: opts.apiKey,
       baseURL: opts.baseURL,
       model: opts.model,

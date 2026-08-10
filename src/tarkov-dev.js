@@ -1,77 +1,117 @@
-// GraphQL client for tarkov.dev API.
-// Fetches items, maps, quests, traders, and hideout data.
+// JSON REST client for tarkov.dev API.
+// Fetches items, maps, quests, traders, and hideout data
+// from json.tarkov.dev with English translations.
 
 const https = require("https");
-const http = require("http");
 
-const API_URL = "https://api.tarkov.dev/graphql";
+const BASE_URL = "https://json.tarkov.dev";
+const GAME_MODE = "regular";
+const LANG = "en";
 
-function graphql(query) {
+// ---------------------------------------------------------------------------
+// HTTP + translation helpers
+// ---------------------------------------------------------------------------
+
+function fetchJson(path) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ query });
-    const url = new URL(API_URL);
-    const mod = url.protocol === "https:" ? https : http;
-
-    const req = mod.request(
-      {
-        hostname: url.hostname,
-        path: url.pathname,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
-      },
-      (res) => {
-        let data = "";
-        res.on("data", (c) => { data += c; });
-        res.on("end", () => {
-          if (res.statusCode && res.statusCode >= 400) {
-            reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 200)}`));
-            return;
-          }
-          try {
-            const json = JSON.parse(data);
-            if (json.errors) reject(new Error(json.errors[0].message));
-            else resolve(json.data);
-          } catch (e) {
-            reject(new Error(`Bad response: ${data.slice(0, 200)}`));
-          }
-        });
+    const url = `${BASE_URL}${path}`;
+    const req = https.get(url, { timeout: 15000 }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        return reject(new Error(`HTTP ${res.statusCode} for ${path}`));
       }
-    );
+      let body = "";
+      res.on("data", (c) => (body += c));
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    
     req.on("error", reject);
-    req.write(body);
-    req.end();
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Request timed out"));
+    });
   });
 }
 
+/**
+ * Resolve a translation key against a translations dictionary.
+ * Returns the translated string, or the key itself as fallback.
+ */
+function tr(key, translations) {
+  if (!key) return null;
+  return translations[key] || key;
+}
+
+/**
+ * Fetch data and English translations for an endpoint.
+ * Returns { data, translations }.
+ */
+async function fetchEndpoint(endpoint) {
+  const [dataResp, langResp] = await Promise.all([
+    fetchJson(`/${GAME_MODE}/${endpoint}`),
+    fetchJson(`/${GAME_MODE}/${endpoint}_${LANG}`),
+  ]);
+  return {
+    data: dataResp.data || dataResp,
+    translations: langResp.data || langResp,
+  };
+}
+
+/**
+ * Fetch only the English translations for an endpoint.
+ */
+async function fetchTranslations(endpoint) {
+  const resp = await fetchJson(`/${GAME_MODE}/${endpoint}_${LANG}`);
+  return resp.data || resp;
+}
+
 // ---------------------------------------------------------------------------
-// Pure mapping functions — transform raw GraphQL nodes into DB row shapes.
-// Consumed by insertItems/insertMaps/insertQuests in data-store.js (T4/T7).
+// Pure mapping functions — transform JSON API nodes into DB row shapes.
+// Consumed by insertItems/insertMaps/insertQuests in data-store.js.
 // ---------------------------------------------------------------------------
 
 /**
- * mapItem(node) → ItemRow
+ * mapItem(node, translations, categoryLookup, traderTranslations) → ItemRow
  * Ammo fields are null for non-ammo items.
+ *
+ * @param {object} item           – raw item node from /regular/items
+ * @param {object} translations   – English translations from /regular/items_en
+ * @param {object} categoryLookup – itemCategories dict from /regular/items
+ * @param {object} traderTr       – English translations from /regular/traders_en
  */
-function mapItem(item) {
+function mapItem(item, translations, categoryLookup, traderTr) {
+  translations = translations || {};
+  categoryLookup = categoryLookup || {};
+  traderTr = traderTr || {};
+
   const ammo =
-    item.properties && item.properties.__typename === "ItemPropertiesAmmo"
+    item.properties && item.properties.propertiesType === "ItemPropertiesAmmo"
       ? item.properties
       : null;
 
-  const sellFor = (item.sellFor || []).map((s) => ({
-    vendor: s.vendor ? s.vendor.name : null,
+  const categoryNames = (item.categories || []).map((catId) => {
+    const cat = categoryLookup[catId];
+    return cat ? tr(cat.name, translations) : catId;
+  });
+
+  const sellFor = (item.sellToTrader || []).map((s) => ({
+    vendor: s.trader ? tr(s.trader + " Nickname", traderTr) : null,
     priceRUB: s.priceRUB != null ? s.priceRUB : null,
   }));
 
+  const desc = tr(item.description, translations);
+
   return {
     id: item.id,
-    name: item.name,
-    shortName: item.shortName || null,
-    description: item.description ? item.description.replace(/<[^>]*>/g, "") : null,
-    category: (item.categories || []).map((c) => c.name).join(", "),
+    name: tr(item.name, translations),
+    shortName: tr(item.shortName, translations) || null,
+    description: desc ? desc.replace(/<[^>]*>/g, "") : null,
+    category: categoryNames.join(", "),
     types: (item.types || []).join(", "),
     basePrice: item.basePrice || 0,
     weight: item.weight || 0,
@@ -91,20 +131,27 @@ function mapItem(item) {
 }
 
 /**
- * mapMap(node) → MapRow
+ * mapMap(node, translations) → MapRow
  * extracts is a JSON string of [{name, faction}].
+ *
+ * @param {object} m            – raw map node from /regular/maps
+ * @param {object} translations – English translations from /regular/maps_en
  */
-function mapMap(m) {
+function mapMap(m, translations) {
+  translations = translations || {};
+
   const extracts = (m.extracts || []).map((e) => ({
-    name: e.name,
+    name: tr(e.name, translations),
     faction: e.faction || null,
   }));
 
+  const desc = tr(m.description, translations);
+
   return {
     id: m.id,
-    name: m.name,
-    description: m.description ? m.description.replace(/<[^>]*>/g, "") : null,
-    enemies: (m.enemies || []).join(", "),
+    name: tr(m.name, translations),
+    description: desc ? desc.replace(/<[^>]*>/g, "") : null,
+    enemies: (m.enemies || []).map((e) => tr(e, translations)).join(", "),
     raidDuration: m.raidDuration || 0,
     players: m.players || null,
     minPlayerLevel: m.minPlayerLevel != null ? m.minPlayerLevel : null,
@@ -113,38 +160,58 @@ function mapMap(m) {
 }
 
 /**
- * mapQuest(node) → QuestRow
+ * mapQuest(node, translations, traderTranslations, mapsTranslations) → QuestRow
  * objectives is plain text for FTS; objectivesJson is structured JSON.
  * requirements is comma-joined prerequisite task names.
+ *
+ * @param {object} q        – raw task node from /regular/tasks
+ * @param {object} tasksTr  – English translations from /regular/tasks_en
+ * @param {object} traderTr – English translations from /regular/traders_en
+ * @param {object} mapsTr   – English translations from /regular/maps_en
  */
-function mapQuest(q) {
-  const objectives = (q.objectives || []);
+function mapQuest(q, tasksTr, traderTr, mapsTr) {
+  tasksTr = tasksTr || {};
+  traderTr = traderTr || {};
+  mapsTr = mapsTr || {};
+
+  const objectives = q.objectives || [];
 
   // Flatten objectives to plain text for FTS indexing
   const objectivesText = objectives
-    .map((o) => o.description || "")
+    .map((o) => tr(o.description, tasksTr) || "")
     .filter(Boolean)
     .join("; ");
 
   // Structured JSON for tool use
-  const objectivesJson = objectives.map((o) => ({
-    type: o.type || null,
-    description: o.description || null,
-    maps: (o.maps || []).map((mm) => mm.name),
-    optional: o.optional === true,
-  }));
+  const objectivesJson = objectives.map((o) => {
+    // Extract unique map names from zones
+    const mapIds = [
+      ...new Set((o.zones || []).map((z) => z.map).filter(Boolean)),
+    ];
+    const mapNames = mapIds.map((id) => tr(id + " Name", mapsTr));
+
+    return {
+      type: o.type || null,
+      description: tr(o.description, tasksTr) || null,
+      maps: mapNames,
+      optional: o.optional === true,
+    };
+  });
 
   // Prerequisite task names, comma-joined
   const requirements = (q.taskRequirements || [])
-    .map((r) => (r.task ? r.task.name : null))
+    .map((r) => {
+      const taskId = typeof r === "string" ? r : r.task || null;
+      return taskId ? tr(taskId + " name", tasksTr) : null;
+    })
     .filter(Boolean)
     .join(", ");
 
   return {
     id: q.id,
-    name: q.name,
-    trader: q.trader ? q.trader.name : null,
-    map: q.map ? q.map.name : null,
+    name: tr(q.name, tasksTr),
+    trader: q.trader ? tr(q.trader + " Nickname", traderTr) : null,
+    map: q.map ? tr(q.map + " Name", mapsTr) : null,
     minPlayerLevel: q.minPlayerLevel != null ? q.minPlayerLevel : null,
     kappaRequired: q.kappaRequired ? 1 : 0,
     wikiLink: q.wikiLink || null,
@@ -159,143 +226,70 @@ function mapQuest(q) {
 // ---------------------------------------------------------------------------
 
 async function fetchItems() {
-  const data = await graphql(`
-    {
-      items {
-        id
-        name
-        shortName
-        description
-        basePrice
-        weight
-        categories {
-          name
-        }
-        types
-        avg24hPrice
-        lastLowPrice
-        sellFor {
-          vendor { name }
-          priceRUB
-        }
-        properties {
-          ... on ItemPropertiesAmmo {
-            caliber
-            damage
-            armorDamage
-            penetrationPower
-            penetrationChance
-            fragmentationChance
-            ricochetChance
-            ammoType
-            projectileCount
-            initialSpeed
-          }
-        }
-      }
-    }
-  `);
-  return (data.items || []).map(mapItem);
+  const { data, translations } = await fetchEndpoint("items");
+  const traderTr = await fetchTranslations("traders");
+
+  const items = data.items || {};
+  const categories = data.itemCategories || {};
+
+  return Object.values(items).map((item) =>
+    mapItem(item, translations, categories, traderTr)
+  );
 }
 
 async function fetchMaps() {
-  const data = await graphql(`
-    {
-      maps {
-        id
-        name
-        description
-        enemies
-        raidDuration
-        players
-        minPlayerLevel
-        extracts {
-          id
-          name
-          faction
-        }
-      }
-    }
-  `);
-  return (data.maps || []).map(mapMap);
+  const { data, translations } = await fetchEndpoint("maps");
+  const maps = data.maps || {};
+
+  return Object.values(maps).map((m) => mapMap(m, translations));
 }
 
 async function fetchQuests() {
-  const data = await graphql(`
-    {
-      tasks {
-        id
-        name
-        trader { name }
-        map { name }
-        minPlayerLevel
-        kappaRequired
-        wikiLink
-        objectives {
-          id
-          type
-          description
-          optional
-          maps { name }
-        }
-        taskRequirements {
-          task { name }
-        }
-      }
-    }
-  `);
-  return (data.tasks || []).map(mapQuest);
+  const { data, translations } = await fetchEndpoint("tasks");
+  const traderTr = await fetchTranslations("traders");
+  const mapsTr = await fetchTranslations("maps");
+
+  const tasks = data.tasks || {};
+
+  return Object.values(tasks).map((q) =>
+    mapQuest(q, translations, traderTr, mapsTr)
+  );
 }
 
 async function fetchTraders() {
-  const data = await graphql(`
-    {
-      traders {
-        id
-        name
-        description
-        currency {
-          name
-        }
-      }
-    }
-  `);
-  return (data.traders || []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    description: (t.description || "").replace(/<[^>]*>/g, ""),
-    currency: t.currency?.name || "RUB",
-  }));
+  const { data, translations } = await fetchEndpoint("traders");
+
+  return Object.values(data)
+    .filter((t) => t && t.id)
+    .map((t) => ({
+      id: t.id,
+      name: tr(t.id + " Nickname", translations),
+      description: (tr(t.id + " Description", translations) || "").replace(
+        /<[^>]*>/g,
+        ""
+      ),
+      currency: t.currency || "RUB",
+    }));
 }
 
 async function fetchHideout() {
-  const data = await graphql(`
-    {
-      hideoutStations {
-        id
-        name
-        levels {
-          id
-          level
-          itemRequirements {
-            item {
-              name
-            }
-            quantity
-          }
-        }
-      }
-    }
-  `);
-  return (data.hideoutStations || []).flatMap((mod) =>
-    (mod.levels || []).map((lvl) => ({
-      id: lvl.id || `${mod.id}-lvl${lvl.level}`,
-      name: `${mod.name} Lv.${lvl.level}`,
-      requirements: (lvl.itemRequirements || [])
-        .map((r) => `${r.quantity}x ${r.item?.name || "Unknown"}`)
-        .join(", "),
-    }))
-  );
+  const { data, translations } = await fetchEndpoint("hideout");
+  const itemsTr = await fetchTranslations("items");
+
+  return Object.values(data)
+    .filter((mod) => mod && mod.id)
+    .flatMap((mod) =>
+      (mod.levels || []).map((lvl) => ({
+        id: lvl.id || `${mod.id}-lvl${lvl.level}`,
+        name: `${tr(mod.name, translations)} Lv.${lvl.level}`,
+        requirements: (lvl.itemRequirements || [])
+          .map(
+            (r) =>
+              `${r.count}x ${tr(r.item + " Name", itemsTr) || "Unknown"}`
+          )
+          .join(", "),
+      }))
+    );
 }
 
 async function fetchAll(onProgress) {

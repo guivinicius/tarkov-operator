@@ -54,19 +54,21 @@
         <div id="first-run" class="first-run hidden">
           <h3>Get running in 4 steps</h3>
           <ol>
-            <li>Paste your <strong>OpenRouter</strong> key in the <strong>Providers</strong> tab.</li>
+            <li>Paste your API key in the <strong>Providers</strong> tab. <strong>OpenRouter</strong> and <strong>OpenAI</strong> are the easiest since one key covers both LLM and Speech-to-Text.</li>
             <li>Click <strong>Validate</strong> to confirm the key works.</li>
             <li>Click <strong>Enable Operator</strong> at the top of this window.</li>
             <li>Tap your push-to-talk key (<span id="first-run-ptt">F1</span>) and ask a question out loud.</li>
           </ol>
-          <p class="first-run-note">That one key covers both the language model and speech-to-text. Speech output uses your system voice, so there is no second key to buy.</p>
         </div>
         <p class="home-desc" id="home-desc">
           You're set up. Tap your push-to-talk key (<span id="home-desc-ptt">F1</span>) and ask a question out loud. Everything in the other tabs is optional.
         </p>
-        <div class="home-status">
-          <span id="home-status-text">Checking...</span>
+        <div class="first-run-note" style="margin-top: 16px;">
+          <strong>Model Tips:</strong> Fast models like <code>Gemini 3.5 Flash</code>, <code>Claude Haiku 4.5</code>, or <code>GPT-4.1</code> offer the best low-latency conversational experience. Heavy reasoning models may take too long to reply verbally.
         </div>
+        <p class="github-link" style="margin-top: 24px; font-size: 13px; text-align: center;">
+          <a href="https://github.com/guivinicius/tarkov-operator" target="_blank" style="color: #4caf50; text-decoration: none;">★ View source or report issues on GitHub</a>
+        </p>
       </div>
     </div>
 
@@ -74,7 +76,7 @@
     <div id="tab-providers" class="tab-panel">
       <div class="card">
         <h2>API Keys</h2>
-        <div class="key-field key-field-primary">
+        <div class="key-field">
           <div class="field">
             <label>OpenRouter</label>
             <div class="field-row">
@@ -83,53 +85,46 @@
             </div>
           </div>
           <div class="validate-status hidden" id="validate-OPENROUTER_API_KEY"></div>
-          <p class="key-field-note">The only key you need. Paste it, then click <strong>Validate</strong>.</p>
+          <p class="key-field-note">Provides LLM, STT, and TTS. The only key you need. <a href="https://openrouter.ai/keys" target="_blank">Get key here</a>.</p>
         </div>
-        <details class="provider-optional">
-          <summary>Other providers (optional)</summary>
-          <div class="provider-optional-body">
-            <div class="key-field">
-              <div class="field">
-                <label>OpenAI</label>
-                <div class="field-row">
-                  <input type="password" id="input-OPENAI_API_KEY" placeholder="sk-...">
-                  <button class="btn-sm validate-btn" data-provider="openai" data-key="OPENAI_API_KEY">Validate</button>
-                </div>
-              </div>
-              <div class="validate-status hidden" id="validate-OPENAI_API_KEY"></div>
-            </div>
-            <div class="key-field">
-              <div class="field">
-                <label>Anthropic</label>
-                <div class="field-row">
-                  <input type="password" id="input-ANTHROPIC_API_KEY" placeholder="sk-ant-...">
-                  <button class="btn-sm validate-btn" data-provider="anthropic" data-key="ANTHROPIC_API_KEY">Validate</button>
-                </div>
-              </div>
-              <div class="validate-status hidden" id="validate-ANTHROPIC_API_KEY"></div>
-            </div>
-            <div class="key-field">
-              <div class="field">
-                <label>ElevenLabs</label>
-                <div class="field-row">
-                  <input type="password" id="input-ELEVENLABS_API_KEY" placeholder="Optional — for TTS">
-                  <button class="btn-sm validate-btn" data-provider="elevenlabs" data-key="ELEVENLABS_API_KEY">Validate</button>
-                </div>
-              </div>
-              <div class="validate-status hidden" id="validate-ELEVENLABS_API_KEY"></div>
-            </div>
-            <div class="key-field">
-              <div class="field">
-                <label>Whisper API</label>
-                <div class="field-row">
-                  <input type="password" id="input-WHISPER_API_KEY" placeholder="Leave blank to use OpenAI/OpenRouter key">
-                  <button class="btn-sm validate-btn" data-provider="whisper-api" data-key="WHISPER_API_KEY">Validate</button>
-                </div>
-              </div>
-              <div class="validate-status hidden" id="validate-WHISPER_API_KEY"></div>
+        
+        <div class="key-field">
+          <div class="field">
+            <label>OpenAI</label>
+            <div class="field-row">
+              <input type="password" id="input-OPENAI_API_KEY" placeholder="sk-...">
+              <button class="btn-sm validate-btn" data-provider="openai" data-key="OPENAI_API_KEY">Validate</button>
             </div>
           </div>
-        </details>
+          <div class="validate-status hidden" id="validate-OPENAI_API_KEY"></div>
+          <p class="key-field-note">Provides LLM, STT, and TTS. <a href="https://platform.openai.com/api-keys" target="_blank">Get key here</a>.</p>
+        </div>
+
+        <div class="key-field">
+          <div class="field">
+            <label>Anthropic</label>
+            <div class="field-row">
+              <input type="password" id="input-ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+              <button class="btn-sm validate-btn" data-provider="anthropic" data-key="ANTHROPIC_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-ANTHROPIC_API_KEY"></div>
+          <p class="key-field-note">Provides LLM. <a href="https://console.anthropic.com/settings/keys" target="_blank">Get key here</a>.</p>
+        </div>
+
+        <div class="key-field">
+          <div class="field">
+            <label>ElevenLabs</label>
+            <div class="field-row">
+              <input type="password" id="input-ELEVENLABS_API_KEY" placeholder="Optional — for TTS">
+              <button class="btn-sm validate-btn" data-provider="elevenlabs" data-key="ELEVENLABS_API_KEY">Validate</button>
+            </div>
+          </div>
+          <div class="validate-status hidden" id="validate-ELEVENLABS_API_KEY"></div>
+          <p class="key-field-note">Provides TTS. <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">Get key here</a>.</p>
+        </div>
+
+
       </div>
     </div>
 
@@ -142,7 +137,6 @@
             <option value="openrouter">OpenRouter</option>
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
-            <option value="ollama">Ollama (local)</option>
           </select>
         </div>
         <div class="field">
@@ -177,43 +171,43 @@
     <!-- Tab: Voice -->
     <div id="tab-voice" class="tab-panel">
       <div class="card">
+        <div class="field" style="margin-bottom: 16px;">
+          <label>Language</label>
+          <select id="input-VOICE_LANGUAGE">
+            <option value="en">English (en)</option>
+            <option value="pt-br">Portuguese (pt-BR)</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom: 16px;">
+          <label>Radio Filter</label>
+          <label class="toggle">
+            <input type="checkbox" id="input-RADIO_FILTER">
+            <span>Enabled</span>
+          </label>
+        </div>
         <h2>Speech-to-Text</h2>
         <p class="plain-summary" id="stt-summary">Your voice is transcribed with the OpenRouter key you already added.</p>
-        <details class="advanced">
-          <summary>Advanced</summary>
-          <div class="advanced-body">
-            <div class="field">
-              <label>Provider</label>
-              <select id="input-STT_PROVIDER">
-                <option value="whisper-api">Whisper API</option>
-                <option value="openrouter">OpenRouter</option>
-                <option value="elevenlabs">ElevenLabs</option>
-                <option value="local">Local Whisper</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Model</label>
-              <div class="field-row">
-                <select id="input-STT_MODEL"></select>
-                <button class="btn-sm" id="refresh-stt-models" title="Fetch models">⟳</button>
-                <span id="stt-models-status" class="status-msg"></span>
-              </div>
-            </div>
-            <div class="field install-instructions" data-depends-on="STT_PROVIDER" data-dep-is="local">
-              <label></label>
-              <div>
-                <p class="hint" style="margin-bottom:4px;font-style:normal;color:#aaa">
-                  Local Whisper requires <code>openai-whisper</code> (Python):
-                </p>
-                <code class="install-cmd" id="local-stt-cmd">pip install openai-whisper</code>
-                <p class="hint" style="margin-top:4px;font-style:normal;color:#666">
-                  Or build <a href="https://github.com/ggerganov/whisper.cpp" target="_blank" style="color:#4caf50">whisper.cpp</a>
-                  and ensure the <code>whisper</code> binary is on your PATH.
-                </p>
-              </div>
-            </div>
+        <div class="field" style="margin-top: 16px;">
+          <label>Provider</label>
+          <select id="input-STT_PROVIDER">
+            <option value="local">Local (Whisper)</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="openai">OpenAI</option>
+            <option value="elevenlabs">ElevenLabs</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <div class="field-row">
+            <select id="input-STT_MODEL"></select>
+            <button class="btn-sm" id="refresh-stt-models" title="Fetch models">⟳</button>
+            <span id="stt-models-status" class="status-msg"></span>
           </div>
-        </details>
+        </div>
+        <div class="field install-instructions" data-depends-on="STT_PROVIDER" data-dep-is="local">
+          <label></label>
+          <div id="local-stt-instructions"></div>
+        </div>
       </div>
       <div class="card">
         <h2>Text-to-Speech</h2>
@@ -221,11 +215,12 @@
           <label>Provider</label>
           <select id="input-TTS_PROVIDER">
             <option value="local">Local (system TTS)</option>
-            <option value="elevenlabs">ElevenLabs</option>
             <option value="openrouter">OpenRouter</option>
+            <option value="openai">OpenAI</option>
+            <option value="elevenlabs">ElevenLabs</option>
           </select>
         </div>
-        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="openrouter">
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="openrouter,openai">
           <label>Model</label>
           <div class="field-row">
             <select id="input-TTS_MODEL"></select>
@@ -233,7 +228,7 @@
             <span id="tts-models-status" class="status-msg"></span>
           </div>
         </div>
-        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs,openrouter">
+        <div class="field" data-depends-on="TTS_PROVIDER" data-dep-is="elevenlabs,openrouter,openai">
           <label>Voice</label>
           <div class="field-row">
             <select id="input-TTS_VOICE"></select>
@@ -241,6 +236,7 @@
             <span id="tts-voices-status" class="status-msg"></span>
           </div>
         </div>
+
         <div class="field">
           <label></label>
           <div class="field-row">

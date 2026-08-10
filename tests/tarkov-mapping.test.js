@@ -9,7 +9,12 @@ const { mapItem, mapMap, mapQuest } = require("../src/tarkov-dev");
 const fixtures = require("./fixtures/graphql-nodes.json");
 
 test("mapItem extracts ammo properties and real prices", () => {
-  const row = mapItem(fixtures.ammoItem);
+  const row = mapItem(
+    fixtures.ammoItem,
+    fixtures.itemTranslations,
+    fixtures.categoryLookup,
+    fixtures.traderTranslations
+  );
 
   // ammo-specific fields
   assert.strictEqual(row.penetrationPower, 37);
@@ -37,7 +42,12 @@ test("mapItem extracts ammo properties and real prices", () => {
 });
 
 test("mapItem yields null ammo fields for non-ammo item", () => {
-  const row = mapItem(fixtures.nonAmmoItem);
+  const row = mapItem(
+    fixtures.nonAmmoItem,
+    fixtures.itemTranslations,
+    fixtures.categoryLookup,
+    fixtures.traderTranslations
+  );
 
   assert.strictEqual(row.caliber, null);
   assert.strictEqual(row.penetrationPower, null);
@@ -57,7 +67,7 @@ test("mapItem yields null ammo fields for non-ammo item", () => {
 });
 
 test("mapMap serializes both extracts with faction", () => {
-  const row = mapMap(fixtures.mapNode);
+  const row = mapMap(fixtures.mapNode, fixtures.mapTranslations);
 
   assert.strictEqual(row.id, "map-reserve");
   assert.strictEqual(row.name, "Reserve");
@@ -78,7 +88,12 @@ test("mapMap serializes both extracts with faction", () => {
 });
 
 test("mapQuest flattens objectives to text and comma-joins requirements", () => {
-  const row = mapQuest(fixtures.taskNode);
+  const row = mapQuest(
+    fixtures.taskNode,
+    fixtures.taskTranslations,
+    fixtures.traderTranslations,
+    fixtures.mapTranslations
+  );
 
   assert.strictEqual(row.id, "task-collector");
   assert.strictEqual(row.name, "Collector");

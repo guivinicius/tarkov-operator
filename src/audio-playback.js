@@ -1,53 +1,83 @@
-// Audio playback via platform-native players.
-// macOS: afplay, Windows: PowerShell MediaPlayer, Linux: aplay/paplay
-
-const { spawn } = require("child_process");
-const { platform } = require("os");
 const path = require("path");
-const fs = require("fs");
-const os = require("os");
+const { BrowserWindow, ipcMain } = require("electron");
 
-function getTempFile(ext) {
-  return path.join(os.tmpdir(), `tarkov-op-${Date.now()}.${ext}`);
+let playerWindow = null;
+let readyPromise = null;
+let playIdCounter = 0;
+const pendingPlays = new Map();
+
+function registerIpc() {
+  ipcMain.on("play-done", (_event, id) => {
+    if (pendingPlays.has(id)) {
+      pendingPlays.get(id).resolve();
+      pendingPlays.delete(id);
+    }
+  });
+
+  ipcMain.on("play-error", (_event, id, msg) => {
+    if (pendingPlays.has(id)) {
+      pendingPlays.get(id).reject(new Error(msg));
+      pendingPlays.delete(id);
+    }
+  });
 }
 
-function playBuffer(audioBuffer, ext = "mp3") {
-  return new Promise((resolve, reject) => {
-    const tmpFile = getTempFile(ext);
-    fs.writeFileSync(tmpFile, audioBuffer);
+registerIpc();
 
-    let player;
+function ensureWindow() {
+  if (playerWindow && !playerWindow.isDestroyed()) return readyPromise;
 
-    if (platform() === "darwin") {
-      player = spawn("afplay", [tmpFile], { stdio: "ignore" });
-    } else if (platform() === "win32") {
-      // Windows: use PowerShell to play via MediaPlayer
-      const psScript = `
-        $player = New-Object System.Media.SoundPlayer;
-        $player.SoundLocation = '${tmpFile.replace(/'/g, "''")}';
-        $player.PlaySync();
-      `;
-      player = spawn("powershell", ["-NoProfile", "-Command", psScript], { stdio: "ignore" });
-    } else {
-      // Linux: try paplay, then aplay
-      try {
-        player = spawn("paplay", [tmpFile], { stdio: "ignore" });
-      } catch {
-        player = spawn("aplay", [tmpFile], { stdio: "ignore" });
-      }
+  playerWindow = new BrowserWindow({
+    show: false,
+    width: 320,
+    height: 200,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.resolve(__dirname, "renderer", "player-preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false,
+    },
+  });
+
+  readyPromise = new Promise((resolve) => {
+    playerWindow.webContents.once("did-finish-load", () => resolve());
+  });
+
+  playerWindow.on("closed", () => {
+    playerWindow = null;
+    readyPromise = null;
+    // Reject any pending plays
+    for (const [id, pending] of pendingPlays.entries()) {
+      pending.reject(new Error("Player window closed"));
     }
+    pendingPlays.clear();
+  });
 
-    player.on("error", (err) => {
-      fs.unlinkSync(tmpFile);
-      reject(err);
-    });
+  playerWindow.loadFile(path.resolve(__dirname, "renderer", "player.html"));
+  return readyPromise;
+}
 
-    player.on("close", (code) => {
-      try { fs.unlinkSync(tmpFile); } catch {}
-      if (code === 0) resolve();
-      else reject(new Error(`Player exited with code ${code}`));
+function playBuffer(audioBuffer, format, options = {}) {
+  return ensureWindow().then(() => {
+    return new Promise((resolve, reject) => {
+      const id = ++playIdCounter;
+      pendingPlays.set(id, { resolve, reject });
+
+      // Send the buffer directly; IPC handles Uint8Array automatically.
+      playerWindow.webContents.send("play-audio", {
+        id,
+        buffer: audioBuffer,
+        applyRadioFilter: options.radioFilter || false
+      });
     });
   });
 }
 
-module.exports = { playBuffer };
+function destroy() {
+  if (playerWindow && !playerWindow.isDestroyed()) playerWindow.destroy();
+  playerWindow = null;
+  readyPromise = null;
+}
+
+module.exports = { playBuffer, destroy };

@@ -37,6 +37,16 @@ function ensurePermanentTables() {
       value TEXT
     );
   `);
+
+  // Seed default game memory keys so the user can easily fill them out in the UI
+  db.exec(`
+    INSERT OR IGNORE INTO user_memory (key, value, updated_at) VALUES 
+    ('Player Name', '', datetime('now')),
+    ('Level', '', datetime('now')),
+    ('Roubles', '', datetime('now')),
+    ('Dollars', '', datetime('now')),
+    ('Euros', '', datetime('now'));
+  `);
 }
 
 /**

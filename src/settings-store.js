@@ -11,7 +11,7 @@ function getDefaults() {
     OPENAI_API_KEY: "",
     ANTHROPIC_API_KEY: "",
     ELEVENLABS_API_KEY: "",
-    WHISPER_API_KEY: "",
+
     LLM_BASE_URL: "https://openrouter.ai/api/v1",
     LLM_MODEL: "anthropic/claude-sonnet-4.6",
     STT_PROVIDER: "openrouter",
@@ -19,6 +19,8 @@ function getDefaults() {
     TTS_PROVIDER: "local",
     TTS_VOICE: "",
     TTS_MODEL: "",
+    VOICE_LANGUAGE: "en",
+    RADIO_FILTER: false,
     PTT_KEY: "F1",
   };
 }

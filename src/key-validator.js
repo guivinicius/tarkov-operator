@@ -43,8 +43,7 @@ const PROVIDERS = {
   },
 };
 
-// The Whisper API field in the UI holds an OpenAI key.
-PROVIDERS["whisper-api"] = { ...PROVIDERS.openai, label: "Whisper API" };
+
 
 const NETWORK_HINTS = {
   ECONNREFUSED: "connection refused",

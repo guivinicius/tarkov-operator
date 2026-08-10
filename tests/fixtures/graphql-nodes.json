@@ -1,21 +1,21 @@
 {
   "ammoItem": {
     "id": "ammo-5.56x45-m995",
-    "name": "5.56x45mm M995",
-    "shortName": "M995",
-    "description": "M995 armor-piercing round for AR platforms.",
+    "name": "ammo-5.56x45-m995 Name",
+    "shortName": "ammo-5.56x45-m995 ShortName",
+    "description": "ammo-5.56x45-m995 Description",
     "basePrice": 1800,
     "weight": 0.009,
-    "categories": [{ "name": "Ammo" }],
+    "categories": ["cat-ammo"],
     "types": ["ammo"],
     "avg24hPrice": 1200,
     "lastLowPrice": 1050,
-    "sellFor": [
-      { "vendor": { "name": "Prapor" }, "priceRUB": 900 },
-      { "vendor": { "name": "Flea Market" }, "priceRUB": 1200 }
+    "sellToTrader": [
+      { "trader": "trader-prapor", "priceRUB": 900 },
+      { "trader": "trader-flea", "priceRUB": 1200 }
     ],
     "properties": {
-      "__typename": "ItemPropertiesAmmo",
+      "propertiesType": "ItemPropertiesAmmo",
       "caliber": "Caliber556x45NATO",
       "damage": 40,
       "armorDamage": 62,
@@ -30,38 +30,38 @@
   },
   "nonAmmoItem": {
     "id": "item-ledx",
-    "name": "LEDX Skin Transilluminator",
-    "shortName": "LEDX",
-    "description": "A rare medical device.",
+    "name": "item-ledx Name",
+    "shortName": "item-ledx ShortName",
+    "description": "item-ledx Description",
     "basePrice": 18069,
     "weight": 0.1,
-    "categories": [{ "name": "Medical supplies" }],
+    "categories": ["cat-medical"],
     "types": ["medical"],
     "avg24hPrice": 950000,
     "lastLowPrice": 920000,
-    "sellFor": [
-      { "vendor": { "name": "Therapist" }, "priceRUB": 700000 }
+    "sellToTrader": [
+      { "trader": "trader-therapist", "priceRUB": 700000 }
     ],
     "properties": null
   },
   "mapNode": {
     "id": "map-reserve",
-    "name": "Reserve",
-    "description": "Military reserve base.",
-    "enemies": ["Raiders", "Gluhar"],
+    "name": "map-reserve Name",
+    "description": "map-reserve Description",
+    "enemies": ["raiders-key", "gluhar-key"],
     "raidDuration": 40,
     "players": "3-9",
     "minPlayerLevel": 0,
     "extracts": [
-      { "id": "ext-d2", "name": "D-2", "faction": "pmc" },
-      { "id": "ext-scav-cl", "name": "Scav Lands", "faction": "scav" }
+      { "id": "ext-d2", "name": "extract-d2", "faction": "pmc" },
+      { "id": "ext-scav-cl", "name": "extract-scav-lands", "faction": "scav" }
     ]
   },
   "taskNode": {
     "id": "task-collector",
-    "name": "Collector",
-    "trader": { "name": "Fence" },
-    "map": { "name": "Any" },
+    "name": "task-collector name",
+    "trader": "trader-fence",
+    "map": "map-any",
     "minPlayerLevel": 71,
     "kappaRequired": true,
     "wikiLink": "https://escapefromtarkov.fandom.com/wiki/Collector",
@@ -69,20 +69,55 @@
       {
         "id": "obj-1",
         "type": "gatherItem",
-        "description": "Hand over Golden 1GPhone smartphone",
+        "description": "obj-1-desc",
         "optional": false,
-        "maps": [{ "name": "Any" }]
+        "zones": [{ "map": "map-any" }]
       },
       {
         "id": "obj-2",
         "type": "gatherItem",
-        "description": "Hand over Alyonka chocolate bar",
+        "description": "obj-2-desc",
         "optional": false,
-        "maps": []
+        "zones": []
       }
     ],
     "taskRequirements": [
-      { "task": { "name": "Regulated Materials" } }
+      { "task": "task-regulated-materials" }
     ]
+  },
+  "itemTranslations": {
+    "ammo-5.56x45-m995 Name": "5.56x45mm M995",
+    "ammo-5.56x45-m995 ShortName": "M995",
+    "ammo-5.56x45-m995 Description": "M995 armor-piercing round for AR platforms.",
+    "item-ledx Name": "LEDX Skin Transilluminator",
+    "item-ledx ShortName": "LEDX",
+    "item-ledx Description": "A rare medical device.",
+    "cat-ammo Name": "Ammo",
+    "cat-medical Name": "Medical supplies"
+  },
+  "categoryLookup": {
+    "cat-ammo": { "id": "cat-ammo", "name": "cat-ammo Name" },
+    "cat-medical": { "id": "cat-medical", "name": "cat-medical Name" }
+  },
+  "traderTranslations": {
+    "trader-prapor Nickname": "Prapor",
+    "trader-flea Nickname": "Flea Market",
+    "trader-therapist Nickname": "Therapist",
+    "trader-fence Nickname": "Fence"
+  },
+  "mapTranslations": {
+    "map-reserve Name": "Reserve",
+    "map-reserve Description": "Military reserve base.",
+    "raiders-key": "Raiders",
+    "gluhar-key": "Gluhar",
+    "extract-d2": "D-2",
+    "extract-scav-lands": "Scav Lands",
+    "map-any Name": "Any"
+  },
+  "taskTranslations": {
+    "task-collector name": "Collector",
+    "obj-1-desc": "Hand over Golden 1GPhone smartphone",
+    "obj-2-desc": "Hand over Alyonka chocolate bar",
+    "task-regulated-materials name": "Regulated Materials"
   }
 }

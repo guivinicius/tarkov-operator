@@ -16,8 +16,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const sttModel = $("input-STT_MODEL");
   const ttsModel = $("input-TTS_MODEL");
   const ttsVoice = $("input-TTS_VOICE");
+  const radioFilter = $("input-RADIO_FILTER");
   const autoFetchData = $("input-AUTO_FETCH_DATA");
-  const homeStatusText = $("home-status-text");
   const firstRun = $("first-run");
   const firstRunPtt = $("first-run-ptt");
   const homeDesc = $("home-desc");
@@ -114,12 +114,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     openrouter: "OpenRouter",
     openai: "OpenAI",
     anthropic: "Anthropic",
-    ollama: "Ollama",
   };
 
   const STT_SUMMARIES = {
     openrouter: "Your voice is transcribed with the OpenRouter key you already added.",
-    "whisper-api": "Your voice is transcribed by Whisper.",
+
+    openai: "Your voice is transcribed by OpenAI.",
     elevenlabs: "Your voice is transcribed by ElevenLabs.",
     local: "Your voice is transcribed on this machine by local Whisper.",
   };
@@ -135,7 +135,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   function requiredCredential() {
     const provider = llmProvider.value || "openrouter";
     const label = LLM_PROVIDER_LABELS[provider] || provider;
-    if (provider === "ollama") return { provider, label, satisfied: true };
     return { provider, label, satisfied: Boolean(keyValue(`${provider.toUpperCase()}_API_KEY`)) };
   }
 
@@ -161,7 +160,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // listing endpoint is public — OpenRouter and ElevenLabs list without auth.
   function keyFor(category, provider, settings) {
     if (category === "llm") {
-      if (provider === "ollama") return { apiKey: "", needsKey: false };
       const apiKey = settings[`${provider.toUpperCase()}_API_KEY`] || "";
       return { apiKey, needsKey: true };
     }
@@ -173,8 +171,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (provider === "openrouter") {
         return { apiKey: settings.OPENROUTER_API_KEY || "", needsKey: true };
       }
+      if (provider === "openai") {
+        return { apiKey: settings.OPENAI_API_KEY || "", needsKey: true };
+      }
       return {
-        apiKey: settings.WHISPER_API_KEY || settings.OPENAI_API_KEY || settings.OPENROUTER_API_KEY || "",
+        apiKey: settings.OPENAI_API_KEY || settings.OPENROUTER_API_KEY || "",
         needsKey: true,
       };
     }
@@ -183,6 +184,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (provider === "elevenlabs") {
       return { apiKey: settings.ELEVENLABS_API_KEY || "", needsKey: true };
+    }
+    if (provider === "openai") {
+      return { apiKey: settings.OPENAI_API_KEY || "", needsKey: true };
     }
     return { apiKey: "", needsKey: false };
   }
@@ -203,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saved = savedValueFor(modelSelect, settings);
 
     if (needsKey && !apiKey) {
-      setSelect(modelSelect, [], saved);
+      setSelect(modelSelect, [], "");
       setStatus(statusEl, NEEDS_KEY_MESSAGE);
       return;
     }
@@ -228,7 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saved = savedValueFor(voiceSelect, settings);
 
     if (needsKey && !apiKey) {
-      setSelect(voiceSelect, [], saved);
+      setSelect(voiceSelect, [], "");
       setStatus(statusEl, NEEDS_KEY_MESSAGE);
       return;
     }
@@ -238,7 +242,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (result.error) {
       setStatus(statusEl, `Error: ${result.error}`);
-      setSelect(voiceSelect, [], saved);
+      setSelect(voiceSelect, [], "");
       return;
     }
 
@@ -340,34 +344,106 @@ document.addEventListener("DOMContentLoaded", async () => {
     homeDesc.classList.toggle("hidden", !credential.satisfied);
     setPttLabels(settings.PTT_KEY || "F1");
 
-    const status = await window.operator.getStatus();
-    const state = status.enabled ? "Active" : "Idle";
-    homeStatusText.textContent = credential.satisfied
-      ? `Operator: ${state} · Connected via ${credential.label}`
-      : `Operator: ${state} · Not connected`;
-
     refreshOperatorGate();
   }
 
   async function fetchGameData() {
-    fetchDataBtn.disabled = true;
-    fetchDataBtn.textContent = "Fetching...";
-    dataProgress.classList.remove("hidden");
+    if (fetchDataBtn.disabled) return;
+    try {
+      fetchDataBtn.disabled = true;
+      fetchDataBtn.textContent = "Fetching...";
+      dataProgress.classList.remove("hidden");
+      dataProgressText.textContent = "Fetching from tarkov.dev...";
+      dataProgressCurrent.textContent = "";
 
-    dataProgressText.textContent = "Fetching from tarkov.dev...";
-    await window.operator.fetchGameData((stage) => {
-      dataProgressCurrent.textContent = stage;
-    });
+      const res = await window.operator.fetchGameData((stage) => {
+        dataProgressCurrent.textContent = stage;
+      });
+      
+      if (res && res.error) throw new Error(res.error);
+      
+      dataProgressText.textContent = "Done!";
+    } catch (err) {
+      dataProgressText.textContent = `Error: ${err.message}`;
+    } finally {
+      dataProgressCurrent.textContent = "";
+      fetchDataBtn.disabled = false;
+      fetchDataBtn.textContent = "Fetch All";
+      setTimeout(() => dataProgress.classList.add("hidden"), 3000);
+      refreshDataStatus();
+    }
+  }
 
-    dataProgressText.textContent = "Done!";
-    dataProgressCurrent.textContent = "";
-    fetchDataBtn.disabled = false;
-    fetchDataBtn.textContent = "Fetch All";
-    setTimeout(() => dataProgress.classList.add("hidden"), 3000);
-    refreshDataStatus();
+  async function updateProviderDropdowns() {
+    const settings = await window.operator.getSettings();
+
+    async function updateSelect(id, allOptions, alwaysInclude = []) {
+      const el = $(id);
+      if (!el) return;
+      
+      const currentVal = el.value || settings[id.replace("input-", "")];
+      
+      const validOptions = allOptions.filter(o => 
+        alwaysInclude.includes(o.value) || 
+        (o.value === "openrouter" && settings.OPENROUTER_API_KEY) ||
+        (o.value === "openai" && settings.OPENAI_API_KEY) ||
+        (o.value === "anthropic" && settings.ANTHROPIC_API_KEY) ||
+        (o.value === "elevenlabs" && settings.ELEVENLABS_API_KEY)
+      );
+
+      el.innerHTML = "";
+      if (validOptions.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No keys configured";
+        el.appendChild(opt);
+      } else {
+        validOptions.forEach(o => {
+          const opt = document.createElement("option");
+          opt.value = o.value;
+          opt.textContent = o.text;
+          el.appendChild(opt);
+        });
+      }
+
+      const validValues = validOptions.map(o => o.value);
+      if (validValues.includes(currentVal)) {
+        el.value = currentVal;
+      } else {
+        el.value = validOptions.length ? validOptions[0].value : "";
+        if (el.value !== currentVal) {
+          await saveSettings([id.replace("input-", "")]);
+        }
+      }
+    }
+
+    await updateSelect("input-LLM_PROVIDER", [
+      { value: "openrouter", text: "OpenRouter" },
+      { value: "openai", text: "OpenAI" },
+      { value: "anthropic", text: "Anthropic" }
+    ]);
+    
+    await updateSelect("input-STT_PROVIDER", [
+      { value: "local", text: "Local (Whisper)" },
+      { value: "openrouter", text: "OpenRouter" },
+      { value: "openai", text: "OpenAI" },
+      { value: "elevenlabs", text: "ElevenLabs" }
+    ], ["local"]);
+
+    await updateSelect("input-TTS_PROVIDER", [
+      { value: "local", text: "Local (system TTS)" },
+      { value: "openrouter", text: "OpenRouter" },
+      { value: "openai", text: "OpenAI" },
+      { value: "elevenlabs", text: "ElevenLabs" }
+    ], ["local"]);
+
+    updateFieldVisibility();
+    updateSttSummary();
+    updateLocalSttCommand();
   }
 
   async function refreshAllProviderLists() {
+    await updateProviderDropdowns();
     await Promise.all([
       fetchAndPopulateModels("llm", llmProvider, llmModel, llmStatus),
       fetchAndPopulateModels("stt", sttProvider, sttModel, sttStatus),
@@ -416,6 +492,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       el.checked = value !== false;
     } else {
       el.value = value;
+      if (el.type === "text") {
+        el.dataset.originalValue = value || "";
+      }
     }
   }
 
@@ -439,7 +518,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateFieldVisibility();
     const v = llmProvider.value;
     $("input-LLM_BASE_URL").value =
-      v === "ollama" ? "http://localhost:11434/v1" :
       v === "openrouter" ? "https://openrouter.ai/api/v1" :
       v === "openai" ? "https://api.openai.com/v1" :
       v === "anthropic" ? "https://api.anthropic.com/v1" : "";
@@ -448,12 +526,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   function updateLocalSttCommand() {
-    const el = document.getElementById("local-stt-cmd");
+    const el = document.getElementById("local-stt-instructions");
     if (!el) return;
     const p = navigator.platform;
-    if (p.startsWith("Mac")) el.textContent = "pip3 install openai-whisper";
-    else if (p.startsWith("Win")) el.textContent = "pip install openai-whisper";
-    else el.textContent = "pip3 install openai-whisper";
+    if (p.startsWith("Win")) {
+      el.innerHTML = `
+        <p class="hint" style="margin-bottom:6px;font-style:normal;color:#aaa">
+          The easiest way on Windows is to download a pre-built <a href="https://github.com/ggml-org/whisper.cpp/releases" target="_blank" style="color:#4caf50">whisper.cpp release</a>, extract it, and add the folder containing <code>whisper.exe</code> to your system PATH.
+        </p>
+        <p class="hint" style="margin-top:6px;font-style:normal;color:#666">
+          Alternatively, use Python: <code class="install-cmd">pip install openai-whisper</code>
+        </p>
+      `;
+    } else {
+      el.innerHTML = `
+        <p class="hint" style="margin-bottom:4px;font-style:normal;color:#aaa">
+          Local Whisper requires <code>openai-whisper</code> (Python):
+        </p>
+        <code class="install-cmd">pip3 install openai-whisper</code>
+        <p class="hint" style="margin-top:4px;font-style:normal;color:#666">
+          Or build <a href="https://github.com/ggml-org/whisper.cpp" target="_blank" style="color:#4caf50">whisper.cpp</a> and ensure the <code>whisper</code> binary is on your PATH.
+        </p>
+      `;
+    }
   }
 
   sttProvider.addEventListener("change", async () => {
@@ -486,6 +581,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     await saveSettings(["TTS_VOICE"]);
   });
 
+  const voiceLanguage = $("input-VOICE_LANGUAGE");
+  if (voiceLanguage) {
+    voiceLanguage.addEventListener("change", async () => {
+      await saveSettings(["VOICE_LANGUAGE"]);
+    });
+  }
+
   testTtsBtn.addEventListener("click", async () => {
     testTtsBtn.disabled = true;
     testTtsStatus.textContent = "Playing...";
@@ -494,9 +596,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       provider: settings.TTS_PROVIDER,
       apiKey:
         settings.TTS_PROVIDER === "openrouter" ? settings.OPENROUTER_API_KEY :
-        settings.TTS_PROVIDER === "elevenlabs" ? settings.ELEVENLABS_API_KEY : "",
+        settings.TTS_PROVIDER === "elevenlabs" ? settings.ELEVENLABS_API_KEY :
+        settings.TTS_PROVIDER === "openai" ? settings.OPENAI_API_KEY : "",
       voice: settings.TTS_VOICE,
       model: settings.TTS_MODEL,
+      language: settings.VOICE_LANGUAGE,
     });
     testTtsStatus.textContent = result && result.error ? `Error: ${result.error}` : "Done";
     testTtsBtn.disabled = false;
@@ -512,7 +616,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Auto-save password fields on blur (only if user actually typed)
-  for (const key of ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "WHISPER_API_KEY"]) {
+  for (const key of ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY"]) {
     const el = $(`input-${key}`);
     if (el) {
       el.addEventListener("input", () => {
@@ -604,6 +708,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   clearDataBtn.addEventListener("click", async () => {
     await window.operator.clearGameData();
     refreshDataStatus();
+  });
+
+  radioFilter.addEventListener("change", async () => {
+    await saveSettings(["RADIO_FILTER"]);
   });
 
   autoFetchData.addEventListener("change", async () => {

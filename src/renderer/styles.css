@@ -222,7 +222,7 @@ button:disabled:hover { background: #0f3460; }
   margin-left: 8px;
 }
 
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 /* Advanced disclosure (LLM, Voice) */
 .plain-summary {
@@ -432,22 +432,6 @@ button:disabled:hover { background: #0f3460; }
 /* Providers key validation */
 .key-field:last-child .field { margin-bottom: 0; }
 
-.key-field-primary {
-  background: #0d0d1a;
-  border: 1px solid #0f3460;
-  border-left: 3px solid #4caf50;
-  border-radius: 6px;
-  padding: 11px 12px;
-  margin-bottom: 10px;
-}
-.key-field-primary .field { margin-bottom: 0; }
-.key-field-primary label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #4caf50;
-}
-.key-field-primary .validate-status { margin: 8px 0 0 80px; }
-
 .key-field-note {
   margin: 8px 0 0 80px;
   font-size: 11px;
@@ -456,29 +440,6 @@ button:disabled:hover { background: #0f3460; }
 }
 .key-field-note strong { color: #999; font-weight: 600; }
 
-.provider-optional {
-  border-top: 1px solid #0f3460;
-  padding-top: 10px;
-}
-.provider-optional > summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 2px 0;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6b7a8f;
-  user-select: none;
-}
-.provider-optional > summary::-webkit-details-marker { display: none; }
-.provider-optional > summary:hover { color: #9fb0c4; }
-.provider-optional-body {
-  padding-top: 12px;
-  opacity: 0.68;
-}
-.provider-optional-body:hover,
-.provider-optional-body:focus-within { opacity: 1; }
-.provider-optional-body label { color: #8a8a99; }
 
 .validate-btn { flex-shrink: 0; min-width: 62px; }
 

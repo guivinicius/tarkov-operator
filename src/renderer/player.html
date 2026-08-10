@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Player</title>
+</head>
+<body>
+<script>
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioContext();
+
+  function makeDistortionCurve(amount) {
+    const k = amount;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+  }
+
+  window.api.onPlay(async ({ id, buffer, applyRadioFilter }) => {
+    try {
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+
+      // decodeAudioData requires an ArrayBuffer
+      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      let lastNode = source;
+
+      if (applyRadioFilter) {
+        // Bandpass filter to cut deep lows and highs
+        const bandpass = ctx.createBiquadFilter();
+        bandpass.type = "bandpass";
+        bandpass.frequency.value = 1500;
+        bandpass.Q.value = 1.0;
+
+        // Distortion to add some crunch
+        const waveShaper = ctx.createWaveShaper();
+        waveShaper.curve = makeDistortionCurve(10);
+        waveShaper.oversample = "4x";
+
+        lastNode.connect(bandpass);
+        bandpass.connect(waveShaper);
+        lastNode = waveShaper;
+      }
+
+      lastNode.connect(ctx.destination);
+      source.onended = () => {
+        window.api.sendDone(id);
+      };
+      source.start(0);
+    } catch (e) {
+      window.api.sendError(id, e.message);
+    }
+  });
+</script>
+</body>
+</html>

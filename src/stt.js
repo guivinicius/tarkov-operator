@@ -18,6 +18,7 @@ async function transcribeWhisperAPI(audioBuffer, opts) {
   const baseURL = opts.baseURL || "https://api.openai.com/v1";
   const model = opts.model || "whisper-1";
   const client = getClient(opts.apiKey, baseURL);
+  const lang = opts.language === "pt-br" ? "pt" : "en";
 
   const tmpFile = path.join(os.tmpdir(), `tarkov-stt-${Date.now()}.wav`);
   fs.writeFileSync(tmpFile, audioBuffer);
@@ -27,7 +28,7 @@ async function transcribeWhisperAPI(audioBuffer, opts) {
     const response = await client.audio.transcriptions.create({
       model,
       file: fs.createReadStream(tmpFile),
-      language: "en",
+      language: lang,
     });
     const latency = (performance.now() - t0) / 1000;
     return { text: (response.text || "").trim(), latency };
@@ -42,13 +43,14 @@ async function transcribeOpenRouter(audioBuffer, opts) {
 
   const model = opts.model || "openai/whisper-1";
   const base64 = audioBuffer.toString("base64");
+  const lang = opts.language === "pt-br" ? "pt" : "en";
 
   const t0 = performance.now();
   return new Promise((resolve, reject) => {
     const reqBody = JSON.stringify({
       model,
       input_audio: { data: base64, format: "wav" },
-      language: "en",
+      language: lang,
     });
 
     const req = https.request(
@@ -154,13 +156,14 @@ async function transcribeElevenLabs(audioBuffer, opts) {
 async function transcribeLocal(audioBuffer, opts) {
   const tmpFile = path.join(os.tmpdir(), `tarkov-stt-${Date.now()}.wav`);
   fs.writeFileSync(tmpFile, audioBuffer);
+  const lang = opts.language === "pt-br" ? "pt" : "en";
 
   try {
     // Try whisper.cpp CLI first
     let stdout;
     try {
       const modelOpt = opts.model ? `--model ${opts.model}` : "--model tiny";
-      stdout = execSync(`whisper ${modelOpt} --language en --output-txt --file "${tmpFile}" 2>/dev/null`, {
+      stdout = execSync(`whisper ${modelOpt} --language ${lang} --output-txt --file "${tmpFile}" 2>/dev/null`, {
         timeout: 60000,
         encoding: "utf-8",
         maxBuffer: 1024 * 1024,
@@ -168,7 +171,7 @@ async function transcribeLocal(audioBuffer, opts) {
     } catch {
       // Try Python whisper as fallback
       try {
-        stdout = execSync(`python3 -c "import whisper; m=whisper.load_model('${opts.model || "tiny"}'); r=m.transcribe('${tmpFile}'); print(r['text'])" 2>/dev/null`, {
+        stdout = execSync(`python3 -c "import whisper; m=whisper.load_model('${opts.model || "tiny"}'); r=m.transcribe('${tmpFile}', language='${lang}'); print(r['text'])" 2>/dev/null`, {
           timeout: 120000,
           encoding: "utf-8",
           maxBuffer: 1024 * 1024,
@@ -190,7 +193,7 @@ async function transcribeLocal(audioBuffer, opts) {
 }
 
 async function transcribe(audioBuffer, opts = {}) {
-  const provider = opts.provider || "whisper-api";
+  const provider = opts.provider || "openai";
 
   if (provider === "openrouter") {
     return transcribeOpenRouter(audioBuffer, opts);
@@ -204,7 +207,13 @@ async function transcribe(audioBuffer, opts = {}) {
     return transcribeLocal(audioBuffer, opts);
   }
 
-  // Default: OpenAI Whisper API
+  if (provider === "openai" || !provider) {
+    const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("API key required for STT");
+    return transcribeWhisperAPI(audioBuffer, opts);
+  }
+
+  // Fallback
   const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("API key required for STT (set provider to 'local', 'elevenlabs', or 'openrouter')");
   return transcribeWhisperAPI(audioBuffer, opts);

@@ -28,13 +28,12 @@ let cachedApiKey = "";
 let cachedBaseURL = "";
 
 function getClient(apiKey, baseURL) {
-  const resolvedBase = baseURL || "https://openrouter.ai/api/v1";
-  if (cachedClient && apiKey === cachedApiKey && resolvedBase === cachedBaseURL) {
+  if (cachedClient && apiKey === cachedApiKey && baseURL === cachedBaseURL) {
     return cachedClient;
   }
   cachedApiKey = apiKey;
-  cachedBaseURL = resolvedBase;
-  cachedClient = new OpenAI({ apiKey, baseURL: resolvedBase });
+  cachedBaseURL = baseURL;
+  cachedClient = new OpenAI({ apiKey, baseURL });
   return cachedClient;
 }
 
@@ -43,8 +42,15 @@ function newSession() {
 }
 
 async function ask(userMessage, opts = {}) {
-  const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY || "ollama";
-  const baseURL = opts.baseURL || "https://openrouter.ai/api/v1";
+  const provider = opts.provider || "openrouter";
+  const apiKey = opts.apiKey || process.env.OPENROUTER_API_KEY || "";
+  let baseURL = opts.baseURL;
+  if (!baseURL) {
+    if (provider === "openai") baseURL = "https://api.openai.com/v1";
+    else if (provider === "anthropic") baseURL = "https://api.anthropic.com/v1";
+    else baseURL = "https://openrouter.ai/api/v1";
+  }
+  
   const model = opts.model || "anthropic/claude-sonnet-4.6";
   const client = getClient(apiKey, baseURL);
 

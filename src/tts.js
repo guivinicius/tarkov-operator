@@ -115,6 +115,48 @@ async function synthesizeOpenRouter(text, opts = {}) {
   });
 }
 
+async function synthesizeOpenAI(text, opts = {}) {
+  const apiKey = opts.apiKey;
+  if (!apiKey) throw new Error("OpenAI API key (or OAuth token) required for TTS");
+
+  const model = opts.model || "tts-1";
+  const voice = opts.voice || "alloy";
+
+  return new Promise((resolve, reject) => {
+    const reqBody = JSON.stringify({
+      model,
+      input: text,
+      voice,
+      response_format: "pcm",
+    });
+
+    const req = https.request(
+      {
+        hostname: "api.openai.com",
+        path: "/v1/audio/speech",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Length": Buffer.byteLength(reqBody),
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          if (res.statusCode === 200) resolve(buffer);
+          else reject(new Error(`OpenAI TTS error ${res.statusCode}: ${buffer.toString("utf-8").slice(0, 200)}`));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(reqBody);
+    req.end();
+  });
+}
+
 async function synthesizeLocal(text, opts = {}) {
   const voiceId = opts.voice || "";
   let tmpFile, format;
@@ -122,16 +164,18 @@ async function synthesizeLocal(text, opts = {}) {
   if (platform() === "darwin") {
     tmpFile = path.join(os.tmpdir(), `tarkov-tts-${Date.now()}.aiff`);
     format = "aiff";
-    const voiceArg = voiceId ? `-v ${voiceId} ` : "-v Daniel ";
+    const defaultVoice = opts.language === "pt-br" ? "Luciana" : "Daniel";
+    const voiceArg = voiceId ? `-v ${voiceId} ` : `-v ${defaultVoice} `;
     execSync(`say ${voiceArg}-o "${tmpFile}" "${text.replace(/"/g, '\\"')}"`, {
       timeout: 15000,
     });
   } else if (platform() === "win32") {
     tmpFile = path.join(os.tmpdir(), `tarkov-tts-${Date.now()}.wav`);
     format = "wav";
+    const defaultVoice = opts.language === "pt-br" ? "Microsoft Maria Desktop" : "Microsoft David Desktop";
     const voiceSelect = voiceId
       ? `$synth.SelectVoice('${voiceId.replace(/'/g, "''")}');`
-      : `try{$synth.SelectVoice('Microsoft David Desktop')}catch{};`;
+      : `try{$synth.SelectVoice('${defaultVoice}')}catch{};`;
     const psScript = `
       Add-Type -AssemblyName System.Speech;
       $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer;
@@ -162,6 +206,14 @@ async function synthesize(text, opts = {}) {
   if (provider === "openrouter") {
     const t0 = performance.now();
     const pcm = await synthesizeOpenRouter(text, opts);
+    const audio = pcmToWav(pcm);
+    const latency = (performance.now() - t0) / 1000;
+    return { audio, format: "wav", latency };
+  }
+
+  if (provider === "openai") {
+    const t0 = performance.now();
+    const pcm = await synthesizeOpenAI(text, opts);
     const audio = pcmToWav(pcm);
     const latency = (performance.now() - t0) / 1000;
     return { audio, format: "wav", latency };

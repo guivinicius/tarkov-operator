@@ -1,6 +1,6 @@
 const {
   app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut, Notification,
-  systemPreferences, session
+  systemPreferences, session, shell
 } = require("electron");
 
 // Ensure consistent userData path between dev and production builds.
@@ -41,15 +41,34 @@ function llmApiKey(s) {
     case "openrouter": return s.OPENROUTER_API_KEY;
     case "openai":     return s.OPENAI_API_KEY;
     case "anthropic":  return s.ANTHROPIC_API_KEY;
-    case "ollama":     return "";
     default:           return "";
   }
+}
+
+function getSaneBaseURL(s) {
+  const p = s.LLM_PROVIDER;
+  const b = s.LLM_BASE_URL;
+  const isOther = (u) => [
+    "https://openrouter.ai/api/v1",
+    "https://api.openai.com/v1",
+    "https://api.anthropic.com/v1"
+  ].includes(u);
+
+  if (!b || (isOther(b) && 
+      ((p === "openai" && b !== "https://api.openai.com/v1") ||
+       (p === "anthropic" && b !== "https://api.anthropic.com/v1") ||
+       (p === "openrouter" && b !== "https://openrouter.ai/api/v1")))) {
+    if (p === "openai") return "https://api.openai.com/v1";
+    if (p === "anthropic") return "https://api.anthropic.com/v1";
+    return "https://openrouter.ai/api/v1";
+  }
+  return b;
 }
 
 function sttApiKey(s) {
   if (s.STT_PROVIDER === "elevenlabs") return s.ELEVENLABS_API_KEY;
   if (s.STT_PROVIDER === "openrouter") return s.OPENROUTER_API_KEY;
-  return s.WHISPER_API_KEY || s.OPENAI_API_KEY || s.OPENROUTER_API_KEY;
+  return s.OPENAI_API_KEY || s.OPENROUTER_API_KEY;
 }
 
 function log(level, message) {
@@ -77,12 +96,13 @@ function processPipeline(audioBuffer) {
 
   Promise.resolve().then(async () => {
     // 1. STT
-    log("info", `[stt] model=${s.STT_MODEL}, provider=${s.STT_PROVIDER || "whisper-api"}`);
+    log("info", `[stt] model=${s.STT_MODEL}, provider=${s.STT_PROVIDER || "openai"}`);
     const tStt = Date.now();
     const sttResult = await stt.transcribe(audioBuffer, {
       apiKey: sttApiKey(s),
       model: s.STT_MODEL,
       provider: s.STT_PROVIDER,
+      language: s.VOICE_LANGUAGE,
     });
     if (!sttResult.text) {
       log("info", "[stt] No speech detected (empty/filtered)");
@@ -92,12 +112,14 @@ function processPipeline(audioBuffer) {
     log("info", `[you] ${sttResult.text}`);
 
     // 2. LLM
-    log("info", `[llm] model=${s.LLM_MODEL}, provider=${s.LLM_PROVIDER}, base=${s.LLM_BASE_URL}`);
+    const saneBaseURL = getSaneBaseURL(s);
+    log("info", `[llm] model=${s.LLM_MODEL}, provider=${s.LLM_PROVIDER}, base=${saneBaseURL}`);
     log("info", `[llm] user="${sttResult.text}"`);
     const tLlm = Date.now();
     const agentResult = await agent.process(sttResult.text, {
+      provider: s.LLM_PROVIDER,
       apiKey: llmApiKey(s),
-      baseURL: s.LLM_BASE_URL,
+      baseURL: saneBaseURL,
       model: s.LLM_MODEL,
     });
     const wordCount = agentResult.text ? agentResult.text.split(/\s+/).length : 0;
@@ -115,17 +137,21 @@ function processPipeline(audioBuffer) {
     let ttsApiKey = "";
     if (s.TTS_PROVIDER === "openrouter") ttsApiKey = s.OPENROUTER_API_KEY;
     else if (s.TTS_PROVIDER === "elevenlabs") ttsApiKey = s.ELEVENLABS_API_KEY;
+    else if (s.TTS_PROVIDER === "openai") ttsApiKey = s.OPENAI_API_KEY;
     const ttsResult = await tts.synthesize(agentResult.text, {
       provider: s.TTS_PROVIDER || "local",
       apiKey: ttsApiKey,
       voice: s.TTS_VOICE || undefined,
       model: s.TTS_MODEL || undefined,
+      language: s.VOICE_LANGUAGE,
     });
     log("info", `[tts] ${(Date.now() - tTts) / 1000}s, format=${ttsResult.format}`);
 
-    // 4. Play (pass format as file extension)
-    log("info", `[play] ${(ttsResult.audio.length / 1024).toFixed(0)}KB`);
-    await audioPlayback.playBuffer(ttsResult.audio, ttsResult.format);
+    // 4. Play
+    log("info", `[play] ${(ttsResult.audio.length / 1024).toFixed(0)}KB (radioFilter=${s.RADIO_FILTER === true})`);
+    await audioPlayback.playBuffer(ttsResult.audio, ttsResult.format, {
+      radioFilter: s.RADIO_FILTER === true,
+    });
     log("info", "[play] Done");
   }).catch((err) => {
     logger.error(`[error] ${err.message}`);
@@ -146,7 +172,7 @@ function enablePTT() {
   const s = settingsStore.load();
   const pttKey = s.PTT_KEY || "F1";
 
-  if (s.LLM_PROVIDER !== "ollama" && !llmApiKey(s)) {
+  if (!llmApiKey(s)) {
     const keyName = `${s.LLM_PROVIDER.toUpperCase()}_API_KEY`;
     const msg = `${keyName} not set.`;
     const hint = "Add your API key in the Providers tab.";
@@ -301,6 +327,9 @@ async function fetchTTSModels(provider, apiKey) {
   if (provider === "openrouter") {
     return fetchOpenRouterModels("speech", apiKey);
   }
+  if (provider === "openai") {
+    return [{ id: "tts-1", name: "tts-1" }, { id: "tts-1-hd", name: "tts-1-hd" }];
+  }
   return [];
 }
 
@@ -318,7 +347,7 @@ async function fetchLLMModels(provider, apiKey, baseURL) {
       });
       const supported = data.data || [];
       return supported
-        .filter((m) => m.id.startsWith("gpt-") || m.id.startsWith("o"))
+        .filter((m) => m.id.startsWith("gpt-") || m.id.startsWith("o") || m.id.includes("gpt"))
         .map((m) => ({ id: m.id, name: m.id }));
     }
     case "anthropic": {
@@ -327,14 +356,6 @@ async function fetchLLMModels(provider, apiKey, baseURL) {
         "anthropic-version": "2023-06-01",
       });
       return (data.data || []).map((m) => ({ id: m.id, name: m.name || m.id }));
-    }
-    case "ollama": {
-      try {
-        const data = await fetchJSON("http://localhost:11434/api/tags");
-        return (data.models || []).map((m) => ({ id: m.name, name: m.name }));
-      } catch {
-        return [{ id: "qwen3:14b", name: "qwen3:14b (default)" }];
-      }
     }
     default:
       return [];
@@ -345,7 +366,7 @@ async function fetchSTTModels(provider, apiKey) {
   if (provider === "openrouter") {
     return fetchOpenRouterModels("transcription", apiKey);
   }
-  if (provider === "whisper-api") {
+  if (provider === "openai") {
     return [{ id: "whisper-1", name: "whisper-1 (OpenAI)" }];
   }
   if (provider === "local") {
@@ -369,7 +390,11 @@ async function fetchSTTModels(provider, apiKey) {
 // Verified: GET /api/v1/models/{id} is a 404, and `supported_voices` on the
 // /models list response is empty for all models. Do not refetch these.
 const OPENROUTER_TTS_VOICES = [
-  "alloy", "echo", "fable", "nova", "shimmer", "coral", "sage", "ash", "ballad",
+  "alloy", "echo", "fable", "onyx", "nova", "shimmer", "coral", "sage", "ash", "ballad",
+];
+
+const OPENAI_TTS_VOICES = [
+  "alloy", "echo", "fable", "onyx", "nova", "shimmer", "ash", "sage", "coral"
 ];
 
 async function fetchTTSVoices(provider, apiKey) {
@@ -385,6 +410,9 @@ async function fetchTTSVoices(provider, apiKey) {
     } catch {
       return [];
     }
+  }
+  if (provider === "openai") {
+    return OPENAI_TTS_VOICES.map((v) => ({ id: v, name: v }));
   }
   if (provider === "openrouter") {
     return OPENROUTER_TTS_VOICES.map((v) => ({ id: v, name: v }));
@@ -494,6 +522,13 @@ function openSettingsWindow() {
   settingsWindow.loadFile(path.resolve(__dirname, "renderer", "index.html"));
   settingsWindow.once("ready-to-show", () => settingsWindow.show());
   settingsWindow.on("closed", () => { settingsWindow = null; });
+
+  settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("http:") || url.startsWith("https:")) {
+      shell.openExternal(url);
+    }
+    return { action: "deny" };
+  });
 
   if (process.env.NODE_ENV === "development") {
     settingsWindow.webContents.openDevTools({ mode: "detach" });
@@ -620,14 +655,20 @@ ipcMain.handle("clear-memory", () => {
 
 ipcMain.handle("test-tts", async (_event, opts) => {
   try {
-    const testPhrase = "Operator, this is a voice test. Radio check, how copy?";
+    const testPhrase = opts.language === "pt-br" 
+      ? "Operador, este é um teste de voz. Câmbio, na escuta?" 
+      : "Operator, this is a voice test. Radio check, how copy?";
     const result = await tts.synthesize(testPhrase, {
       provider: opts.provider || "local",
       apiKey: opts.apiKey || "",
       voice: opts.voice || undefined,
       model: opts.model || undefined,
+      language: opts.language,
     });
-    await audioPlayback.playBuffer(result.audio, result.format);
+    const s = settingsStore.load();
+    await audioPlayback.playBuffer(result.audio, result.format, {
+      radioFilter: s.RADIO_FILTER === true
+    });
     return { ok: true };
   } catch (err) {
     log("error", `[tts-test] ${err.message}`);

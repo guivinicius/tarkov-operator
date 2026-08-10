@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline';">
   <title>Audio Player</title>
 </head>
 <body>
@@ -22,6 +23,7 @@
   }
 
   window.api.onPlay(async ({ id, buffer, applyRadioFilter }) => {
+    let source, bandpass, waveShaper;
     try {
       if (ctx.state === "suspended") {
         await ctx.resume();
@@ -31,19 +33,19 @@
       const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
       
-      const source = ctx.createBufferSource();
+      source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       let lastNode = source;
 
       if (applyRadioFilter) {
         // Bandpass filter to cut deep lows and highs
-        const bandpass = ctx.createBiquadFilter();
+        bandpass = ctx.createBiquadFilter();
         bandpass.type = "bandpass";
         bandpass.frequency.value = 1500;
         bandpass.Q.value = 1.0;
 
         // Distortion to add some crunch
-        const waveShaper = ctx.createWaveShaper();
+        waveShaper = ctx.createWaveShaper();
         waveShaper.curve = makeDistortionCurve(10);
         waveShaper.oversample = "4x";
 
@@ -54,10 +56,24 @@
 
       lastNode.connect(ctx.destination);
       source.onended = () => {
+        try {
+          if (source) source.disconnect();
+          if (applyRadioFilter && bandpass) {
+            bandpass.disconnect();
+            if (waveShaper) waveShaper.disconnect();
+          }
+        } catch (_) {}
         window.api.sendDone(id);
       };
       source.start(0);
     } catch (e) {
+      try {
+        if (source) source.disconnect();
+        if (applyRadioFilter && bandpass) {
+          bandpass.disconnect();
+          if (waveShaper) waveShaper.disconnect();
+        }
+      } catch (_) {}
       window.api.sendError(id, e.message);
     }
   });

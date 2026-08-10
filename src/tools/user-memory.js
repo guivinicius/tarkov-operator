@@ -27,12 +27,21 @@ const recallSchema = {
 };
 
 async function rememberHandler(args) {
+  if (!args.key || typeof args.key !== "string" || !args.key.trim()) {
+    return "Please provide a fact name (key).";
+  }
+  if (!args.value || typeof args.value !== "string" || !args.value.trim()) {
+    return "Please provide a fact value.";
+  }
   logger.debug(`[tool:remember_fact] key="${args.key}" value="${args.value}"`);
   dataStore.setMemory(args.key, args.value);
   return `Saved: ${args.key} = ${args.value}`;
 }
 
 async function recallHandler(args) {
+  if (!args.key || typeof args.key !== "string" || !args.key.trim()) {
+    return "Please provide a fact name to look up.";
+  }
   logger.debug(`[tool:recall_fact] key="${args.key}"`);
   const result = dataStore.getMemory(args.key);
   logger.debug(`[tool:recall_fact] found=${!!result}`);

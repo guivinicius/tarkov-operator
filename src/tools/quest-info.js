@@ -18,6 +18,9 @@ const schema = {
 };
 
 async function handler(args) {
+  if (!args.quest_name || typeof args.quest_name !== "string" || !args.quest_name.trim()) {
+    return "Please provide a quest name.";
+  }
   logger.debug(`[tool:quest_info] quest_name="${args.quest_name}"`);
 
   const rows = dataStore.getQuestInfo(args.quest_name);

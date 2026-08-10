@@ -18,6 +18,9 @@ const schema = {
 };
 
 async function handler(args) {
+  if (!args.item_name || typeof args.item_name !== "string" || !args.item_name.trim()) {
+    return "Please provide an item name.";
+  }
   logger.debug(`[tool:item_value] item_name="${args.item_name}"`);
 
   const row = dataStore.getItemValue(args.item_name);

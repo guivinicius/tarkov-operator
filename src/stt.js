@@ -5,7 +5,7 @@ const OpenAI = require("openai");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { spawn, execSync } = require("child_process");
+const { spawnSync } = require("child_process");
 
 function getClient(apiKey, baseURL) {
   return new OpenAI({
@@ -162,20 +162,15 @@ async function transcribeLocal(audioBuffer, opts) {
     // Try whisper.cpp CLI first
     let stdout;
     try {
-      const modelOpt = opts.model ? `--model ${opts.model}` : "--model tiny";
-      stdout = execSync(`whisper ${modelOpt} --language ${lang} --output-txt --file "${tmpFile}" 2>/dev/null`, {
-        timeout: 60000,
-        encoding: "utf-8",
-        maxBuffer: 1024 * 1024,
-      });
+      const result = spawnSync("whisper", ["--model", opts.model || "tiny", "--language", lang, "--output-txt", "--file", tmpFile], { timeout: 60000, encoding: "utf-8", maxBuffer: 1024 * 1024 });
+      if (result.status !== 0) throw new Error("whisper.cpp failed");
+      stdout = result.stdout;
     } catch {
       // Try Python whisper as fallback
       try {
-        stdout = execSync(`python3 -c "import whisper; m=whisper.load_model('${opts.model || "tiny"}'); r=m.transcribe('${tmpFile}', language='${lang}'); print(r['text'])" 2>/dev/null`, {
-          timeout: 120000,
-          encoding: "utf-8",
-          maxBuffer: 1024 * 1024,
-        });
+        const result = spawnSync("python3", ["-c", 'import sys; import whisper; m=whisper.load_model(sys.argv[1]); r=m.transcribe(sys.argv[2], language=sys.argv[3]); print(r["text"])', opts.model || "tiny", tmpFile, lang], { timeout: 120000, encoding: "utf-8", maxBuffer: 1024 * 1024 });
+        if (result.status !== 0) throw new Error("Python whisper failed");
+        stdout = result.stdout;
       } catch {
         throw new Error(
           "Local STT requires whisper.cpp or Python whisper.\n" +

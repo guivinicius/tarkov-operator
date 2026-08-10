@@ -1,6 +1,6 @@
 // Text-to-speech via ElevenLabs API, OpenRouter, or platform-native TTS.
 
-const { spawn, execSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const { platform } = require("os");
 const path = require("path");
 const fs = require("fs");
@@ -165,10 +165,9 @@ async function synthesizeLocal(text, opts = {}) {
     tmpFile = path.join(os.tmpdir(), `tarkov-tts-${Date.now()}.aiff`);
     format = "aiff";
     const defaultVoice = opts.language === "pt-br" ? "Luciana" : "Daniel";
-    const voiceArg = voiceId ? `-v ${voiceId} ` : `-v ${defaultVoice} `;
-    execSync(`say ${voiceArg}-o "${tmpFile}" "${text.replace(/"/g, '\\"')}"`, {
-      timeout: 15000,
-    });
+    const voiceArgs = ["-v", voiceId || defaultVoice, "-o", tmpFile, text];
+    const result = spawnSync("say", voiceArgs, { timeout: 15000 });
+    if (result.error) throw result.error;
   } else if (platform() === "win32") {
     tmpFile = path.join(os.tmpdir(), `tarkov-tts-${Date.now()}.wav`);
     format = "wav";
@@ -184,15 +183,13 @@ async function synthesizeLocal(text, opts = {}) {
       $synth.Speak('${text.replace(/'/g, "''")}');
       $synth.Dispose();
     `;
-    execSync(`powershell -NoProfile -Command "${psScript.replace(/"/g, '\\"')}"`, {
-      timeout: 15000,
-    });
+    const result = spawnSync("powershell", ["-NoProfile", "-Command", psScript], { timeout: 15000 });
+    if (result.error) throw result.error;
   } else {
     tmpFile = path.join(os.tmpdir(), `tarkov-tts-${Date.now()}.wav`);
     format = "wav";
-    execSync(`espeak "${text.replace(/"/g, '\\"')}" -w "${tmpFile}"`, {
-      timeout: 15000,
-    });
+    const result = spawnSync("espeak", [text, "-w", tmpFile], { timeout: 15000 });
+    if (result.error) throw result.error;
   }
 
   const audioBuffer = fs.readFileSync(tmpFile);

@@ -2,12 +2,37 @@ node_modules/
 out/
 dist/
 *.log
+
+# OS files
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
 .env
 .env.*
 *.local
-.opencode/
 
-.omo/
-dist/
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test / Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Build artifacts
 qa-artifacts/
+
+# Tool configs
+.opencode/
+.omo/

@@ -49,6 +49,7 @@ src/
 | `npm start` | Launch production |
 | `npm run dev` | Launch + DevTools |
 | `npm test` | Run test suite (requires Electron ABI) |
+| `npm run lint` | Run ESLint |
 | `npm run build:mac` | Package macOS .dmg |
 | `npm run build:win` | Package Windows .exe |
 
@@ -93,3 +94,7 @@ src/
 - **OpenRouter free models** may be blocked by privacy guardrails.
 - **Unsigned builds:** Windows SmartScreen and macOS Gatekeeper will block the app by default.
 - **No Python.** Everything is Node.js.
+- **No `execSync` with string interpolation.** Use `spawnSync` with array arguments to prevent command injection.
+- **CSS uses custom properties.** All theme colors are defined as `var(--*)` in `:root` in `styles.css`. Use those variables, don't hardcode hex colors.
+- **Settings are in SQLite**, not JSON files. Don't reference `settings.json`.
+- **Tool handlers must validate inputs** before querying the database.

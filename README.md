@@ -1,5 +1,8 @@
 # Tarkov Operator
 
+[![CI](https://github.com/guivinicius/tarkov-operator/actions/workflows/ci.yml/badge.svg)](https://github.com/guivinicius/tarkov-operator/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 Voice companion for Escape from Tarkov. Tap a key, ask a question out loud, and hear an answer without alt-tabbing to a wiki.
 
 ## Download
@@ -99,6 +102,10 @@ src/
     ├── app.js             # Main UI logic
     └── capture.*          # Hidden capture renderer
 ```
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

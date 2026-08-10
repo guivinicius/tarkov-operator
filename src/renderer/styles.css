@@ -1,9 +1,24 @@
+:root {
+  --bg-main: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-dark: #0d0d1a;
+  --bg-input: #111;
+  --border-color: #0f3460;
+  --border-active: #1a4a8a;
+  --accent: #4caf50;
+  --error: #ef5350;
+  --text-main: #e0e0e0;
+  --text-muted: #888;
+  --text-dim: #666;
+  --text-label: #aaa;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #1a1a2e;
-  color: #e0e0e0;
+  background: var(--bg-main);
+  color: var(--text-main);
   font-size: 13px;
 }
 
@@ -19,8 +34,8 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #16213e;
-  border-bottom: 1px solid #0f3460;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .indicator {
@@ -29,8 +44,8 @@ body {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.indicator.idle { background: #888; }
-.indicator.active { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
+.indicator.idle { background: var(--text-muted); }
+.indicator.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
 #status-text { flex: 1; font-weight: 600; font-size: 13px; }
 
@@ -39,11 +54,11 @@ body {
   align-items: center;
   gap: 4px;
 }
-.ptt-picker label { font-size: 11px; color: #888; }
+.ptt-picker label { font-size: 11px; color: var(--text-muted); }
 .ptt-picker select {
-  background: #0d0d1a;
-  color: #e0e0e0;
-  border: 1px solid #0f3460;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
   padding: 3px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -51,25 +66,25 @@ body {
 }
 
 button {
-  background: #0f3460;
-  color: #e0e0e0;
-  border: 1px solid #1a4a8a;
+  background: var(--border-color);
+  color: var(--text-main);
+  border: 1px solid var(--border-active);
   padding: 5px 12px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
 }
-button:hover { background: #1a4a8a; }
+button:hover { background: var(--border-active); }
 
 button:disabled {
   opacity: 0.38;
   filter: grayscale(0.7);
   cursor: not-allowed;
 }
-button:disabled:hover { background: #0f3460; }
+button:disabled:hover { background: var(--border-color); }
 
 .btn-primary {
-  background: #1a4a8a;
+  background: var(--border-active);
   border-color: #2a5aaa;
   padding: 6px 20px;
   font-weight: 600;
@@ -90,8 +105,8 @@ button:disabled:hover { background: #0f3460; }
 /* Tab bar */
 #tab-bar {
   display: flex;
-  background: #0d0d1a;
-  border-bottom: 1px solid #0f3460;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tab {
@@ -102,13 +117,13 @@ button:disabled:hover { background: #0f3460; }
   padding: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #888;
+  color: var(--text-muted);
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .tab:hover { color: #b0bec5; background: rgba(255,255,255,0.03); }
-.tab.active { color: #4caf50; border-bottom-color: #4caf50; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* Tab panels */
 .tab-panel {
@@ -123,8 +138,8 @@ button:disabled:hover { background: #0f3460; }
 .card {
   padding: 12px;
   margin-bottom: 8px;
-  background: #16213e;
-  border: 1px solid #0f3460;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -132,7 +147,7 @@ button:disabled:hover { background: #0f3460; }
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: var(--text-muted);
   margin-bottom: 10px;
 }
 
@@ -149,16 +164,16 @@ button:disabled:hover { background: #0f3460; }
   width: 72px;
   flex-shrink: 0;
   font-size: 11px;
-  color: #aaa;
+  color: var(--text-label);
 }
 
 .field select,
 .field input[type="text"],
 .field input[type="password"] {
   flex: 1;
-  background: #0d0d1a;
-  color: #e0e0e0;
-  border: 1px solid #0f3460;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
   padding: 5px 8px;
   border-radius: 4px;
   font-size: 12px;
@@ -166,7 +181,7 @@ button:disabled:hover { background: #0f3460; }
 }
 
 .field select:focus,
-.field input:focus { outline: none; border-color: #4caf50; }
+.field input:focus { outline: none; border-color: var(--accent); }
 .field select { cursor: pointer; }
 
 .field-row {
@@ -179,15 +194,15 @@ button:disabled:hover { background: #0f3460; }
 
 .hint {
   font-size: 11px;
-  color: #666;
+  color: var(--text-dim);
   font-style: italic;
   flex: 1;
 }
 
 .install-instructions {
   align-items: flex-start;
-  background: #0d0d1a;
-  border: 1px solid #0f3460;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 10px;
   margin-top: 4px;
@@ -197,8 +212,8 @@ button:disabled:hover { background: #0f3460; }
 
 .install-cmd {
   display: block;
-  background: #111;
-  color: #4caf50;
+  background: var(--bg-input);
+  color: var(--accent);
   padding: 6px 10px;
   border-radius: 4px;
   font-family: "SF Mono", "Fira Code", monospace;
@@ -207,18 +222,18 @@ button:disabled:hover { background: #0f3460; }
   word-break: break-all;
 }
 
-.install-instructions a { color: #4caf50; text-decoration: underline; }
-.install-instructions code { color: #4caf50; font-size: 11px; }
+.install-instructions a { color: var(--accent); text-decoration: underline; }
+.install-instructions code { color: var(--accent); font-size: 11px; }
 
 .status-msg {
   font-size: 11px;
-  color: #888;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
 .save-feedback {
   font-size: 12px;
-  color: #4caf50;
+  color: var(--accent);
   margin-left: 8px;
 }
 
@@ -226,14 +241,14 @@ button:disabled:hover { background: #0f3460; }
 
 /* Advanced disclosure (LLM, Voice) */
 .plain-summary {
-  color: #aaa;
+  color: var(--text-label);
   font-size: 12px;
   line-height: 1.5;
   margin-bottom: 10px;
 }
 
 .advanced {
-  border-top: 1px solid #0f3460;
+  border-top: 1px solid var(--border-color);
   padding-top: 10px;
   margin-top: 2px;
 }
@@ -273,8 +288,8 @@ button:disabled:hover { background: #0f3460; }
   margin-bottom: 10px;
 }
 .data-stat {
-  background: #0d0d1a;
-  border: 1px solid #0f3460;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 8px;
   text-align: center;
@@ -284,14 +299,14 @@ button:disabled:hover { background: #0f3460; }
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #666;
+  color: var(--text-dim);
   margin-bottom: 4px;
 }
 .stat-value {
   display: block;
   font-size: 16px;
   font-weight: 700;
-  color: #e0e0e0;
+  color: var(--text-main);
 }
 #data-actions {
   display: flex;
@@ -299,8 +314,8 @@ button:disabled:hover { background: #0f3460; }
   margin-bottom: 8px;
 }
 #data-progress {
-  background: #0d0d1a;
-  border: 1px solid #0f3460;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 8px;
   font-size: 12px;
@@ -308,8 +323,8 @@ button:disabled:hover { background: #0f3460; }
   gap: 8px;
   align-items: center;
 }
-#data-progress-text { color: #4caf50; }
-#data-progress-current { color: #888; font-style: italic; }
+#data-progress-text { color: var(--accent); }
+#data-progress-current { color: var(--text-muted); font-style: italic; }
 
 /* Toggle checkbox */
 .toggle {
@@ -318,7 +333,7 @@ button:disabled:hover { background: #0f3460; }
   gap: 6px;
   cursor: pointer;
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-label);
 }
 .toggle input { width: auto; }
 
@@ -333,14 +348,14 @@ button:disabled:hover { background: #0f3460; }
   display: flex;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid #0f3460;
+  border-bottom: 1px solid var(--border-color);
 }
 #log-header h2 {
   flex: 1;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -355,7 +370,7 @@ button:disabled:hover { background: #0f3460; }
 
 .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(15,52,96,0.3); word-break: break-word; }
 .log-entry.info { color: #b0bec5; }
-.log-entry.error { color: #ef5350; }
+.log-entry.error { color: var(--error); }
 
 .deemphasized-input {
   opacity: 0.7;
@@ -369,21 +384,21 @@ button:disabled:hover { background: #0f3460; }
 }
 
 .home-desc {
-  color: #aaa;
+  color: var(--text-label);
   line-height: 1.5;
   margin-bottom: 16px;
 }
 
 .home-status {
   font-size: 0.9rem;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .home-error {
-  background: #1a1a2e;
-  border: 1px solid #0f3460;
-  border-left: 4px solid #ef5350;
-  color: #ef5350;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--error);
+  color: var(--error);
   padding: 12px 16px;
   margin-bottom: 12px;
   border-radius: 4px;
@@ -392,9 +407,9 @@ button:disabled:hover { background: #0f3460; }
 
 /* First-run checklist (Home) */
 .first-run {
-  background: #0d0d1a;
-  border: 1px solid #0f3460;
-  border-left: 4px solid #4caf50;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent);
   border-radius: 6px;
   padding: 12px 16px;
   margin-bottom: 16px;
@@ -405,7 +420,7 @@ button:disabled:hover { background: #0f3460; }
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #4caf50;
+  color: var(--accent);
 }
 
 .first-run ol {
@@ -420,7 +435,7 @@ button:disabled:hover { background: #0f3460; }
   font-size: 12px;
 }
 
-.first-run li strong { color: #4caf50; font-weight: 600; }
+.first-run li strong { color: var(--accent); font-weight: 600; }
 
 .first-run-note {
   margin: 10px 0 0 0;
@@ -447,11 +462,11 @@ button:disabled:hover { background: #0f3460; }
   margin: 2px 0 8px 80px;
   font-size: 11px;
   line-height: 1.45;
-  color: #888;
+  color: var(--text-muted);
 }
 
-.validate-ok { color: #4caf50; }
-.validate-fail { color: #ef5350; }
+.validate-ok { color: var(--accent); }
+.validate-fail { color: var(--error); }
 
 /* Memory tab */
 #memory-table {
@@ -463,7 +478,7 @@ button:disabled:hover { background: #0f3460; }
   text-align: left;
   padding: 6px 8px;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted);
   border-bottom: 1px solid #333;
 }
 
@@ -483,13 +498,13 @@ button:disabled:hover { background: #0f3460; }
 }
 
 .memory-edit-input:focus {
-  border-bottom-color: #4caf50;
+  border-bottom-color: var(--accent);
   outline: none;
 }
 
 .memory-time {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-dim);
   white-space: nowrap;
 }
 

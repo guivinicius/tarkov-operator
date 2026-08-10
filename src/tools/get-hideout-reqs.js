@@ -14,6 +14,9 @@ const schema = {
 };
 
 async function handler(args) {
+  if (!args.module_name || typeof args.module_name !== "string" || !args.module_name.trim()) {
+    return "Please provide a hideout module name.";
+  }
   logger.debug(`[tool:get_hideout_requirements] module="${args.module_name}"`);
   const rows = dataStore.searchHideout(args.module_name);
   logger.debug(`[tool:get_hideout_requirements] found=${rows.length}`);

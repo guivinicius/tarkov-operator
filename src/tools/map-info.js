@@ -18,6 +18,9 @@ const schema = {
 };
 
 async function handler(args) {
+  if (!args.map_name || typeof args.map_name !== "string" || !args.map_name.trim()) {
+    return "Please provide a map name.";
+  }
   logger.debug(`[tool:map_info] map_name="${args.map_name}"`);
 
   const row = dataStore.getMapWithExtracts(args.map_name);

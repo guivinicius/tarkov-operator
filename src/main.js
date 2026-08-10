@@ -73,6 +73,7 @@ function sttApiKey(s) {
 
 function log(level, message) {
   const entry = { level, message, time: Date.now() };
+  if (logs.length >= 1000) logs.shift();
   logs.push(entry);
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.webContents.send("log", entry);
@@ -80,6 +81,7 @@ function log(level, message) {
 }
 
 logger.setSink((entry) => {
+  if (logs.length >= 1000) logs.shift();
   logs.push(entry);
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.webContents.send("log", entry);

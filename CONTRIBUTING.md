@@ -27,11 +27,11 @@ All modules live in `src/`. The renderer communicates with the main process via 
 |---|---|
 | `main.js` | Electron main process — tray, PTT loop, IPC handlers, provider API fetches |
 | `preload.js` | contextBridge — exposes IPC calls to renderer |
-| `settings-store.js` | JSON persistence in `app.getPath("userData")` |
+| `settings-store.js` | SQLite settings persistence |
 | `llm.js` | OpenAI-compatible LLM client with conversation history |
 | `stt.js` | Speech-to-text (Whisper API, OpenRouter, ElevenLabs, local Whisper) |
 | `tts.js` | Text-to-speech (ElevenLabs, OpenRouter, system TTS) |
-| `audio-capture.js` | Mic capture via SoX `rec` |
+| `audio-capture.js` | Mic capture via hidden Chromium renderer (getUserMedia) |
 | `audio-playback.js` | Audio playback via platform player |
 | `data-store.js` | SQLite + FTS5 cache for game data |
 | `tarkov-dev.js` | GraphQL client for tarkov.dev |
@@ -48,10 +48,18 @@ New features that need UI controls should add:
 
 ## Testing
 
-The app is manually tested by running `npm start` and verifying the full pipeline:
-capture → STT → LLM → TTS → playback.
+Run the test suite:
+```bash
+npm test
+```
 
-There is no test framework yet. Smoke tests are run by hand.
+Tests run under the Electron binary (required for native `better-sqlite3` bindings).
+See `tests/` for existing unit and integration tests.
+
+Before submitting a PR, verify:
+1. `npm test` passes
+2. `npm run lint` passes
+3. The app starts (`npm start`) and PTT pipeline works
 
 ## Building
 
@@ -75,3 +83,7 @@ Native modules (`better-sqlite3`) are rebuilt with `@electron/rebuild` during bu
 - Keep changes focused. One feature/fix per PR.
 - Update README.md if adding or changing user-facing behavior.
 - Verify the app starts and the PTT pipeline works before submitting.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).

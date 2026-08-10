@@ -22,7 +22,10 @@ const schema = {
 };
 
 async function handler(args) {
-  const armorClass = args.armor_class;
+  const armorClass = Number(args.armor_class);
+  if (!Number.isInteger(armorClass) || armorClass < 1 || armorClass > 6) {
+    return "Armor class must be an integer between 1 and 6.";
+  }
   const caliber = args.caliber || null;
   logger.debug(`[tool:ammo_vs_armor] armor_class=${armorClass} caliber=${caliber}`);
 

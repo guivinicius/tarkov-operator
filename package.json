@@ -6,10 +6,20 @@
   "license": "MIT",
   "author": "Guilherme Vinicius Moreira",
   "repository": "github:guivinicius/tarkov-operator",
+  "private": true,
+  "bugs": {
+    "url": "https://github.com/guivinicius/tarkov-operator/issues"
+  },
+  "homepage": "https://github.com/guivinicius/tarkov-operator#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
     "test": "ELECTRON_RUN_AS_NODE=1 electron --test tests/*.test.js",
+    "lint": "eslint src/ tests/",
+    "format:check": "prettier --check 'src/**/*.{js,css,html}' 'tests/**/*.js'",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
     "build": "electron-builder --mac --win"
@@ -20,13 +30,18 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
+    "@eslint/js": "^9.39.5",
     "electron": "^35.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.0.0",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6"
   },
   "build": {
     "appId": "com.tarkov-operator.desktop",
     "productName": "Tarkov Operator",
-    "asarUnpack": ["node_modules/better-sqlite3/**"],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**"
+    ],
     "files": [
       "src/**/*",
       "data/**/*",

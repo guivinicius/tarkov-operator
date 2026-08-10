@@ -5,6 +5,11 @@
 
 Voice companion for Escape from Tarkov. Tap a key, ask a question out loud, and hear an answer without alt-tabbing to a wiki.
 
+<img width="649" height="631" alt="Screenshot 2026-08-10 at 2 29 22 PM" src="https://github.com/user-attachments/assets/2c3c7da7-c7d2-4b66-b979-680e66ca0ae8" />
+<img width="654" height="628" alt="Screenshot 2026-08-10 at 2 29 30 PM" src="https://github.com/user-attachments/assets/d7132fd8-5b7e-4cd9-99f3-c8acf188392f" />
+<img width="665" height="638" alt="Screenshot 2026-08-10 at 2 29 40 PM" src="https://github.com/user-attachments/assets/29d75179-7331-4e9f-b783-5f994bf1c110" />
+
+
 ## Download
 
 Get the latest version from [GitHub Releases](https://github.com/guivinicius/tarkov-operator/releases).

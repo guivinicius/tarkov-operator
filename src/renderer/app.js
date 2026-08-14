@@ -23,7 +23,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const homeDesc = $("home-desc");
   const homeDescPtt = $("home-desc-ptt");
   const sttSummary = $("stt-summary");
-  const pttKeySelect = $("input-PTT_KEY");
+  const pttKeyBtn = $("btn-record-ptt");
+  const pttModeSelect = $("input-PTT_MODE");
 
   let operatorEnabled = false;
   const refreshLlm = $("refresh-llm-models");
@@ -157,6 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function setPttLabels(key) {
     firstRunPtt.textContent = key;
     homeDescPtt.textContent = key;
+    pttKeyBtn.textContent = key;
   }
 
   function updateSttSummary() {
@@ -349,7 +351,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // First run is "cannot run yet", not "hasn't filled every field".
     firstRun.classList.toggle("hidden", credential.satisfied);
     homeDesc.classList.toggle("hidden", !credential.satisfied);
-    setPttLabels(settings.PTT_KEY || "F1");
+    setPttLabels(settings.PTT_KEY?.name || "F1");
 
     refreshOperatorGate();
   }
@@ -766,9 +768,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshMemory();
   });
 
-  pttKeySelect.addEventListener("change", async () => {
-    await saveSettings(["PTT_KEY"]);
-    setPttLabels(pttKeySelect.value);
+  pttKeyBtn.addEventListener("click", async () => {
+    pttKeyBtn.textContent = "Listening...";
+    pttKeyBtn.disabled = true;
+    const newKey = await window.operator.recordPttKey();
+    pttKeyBtn.disabled = false;
+    if (newKey) {
+      await window.operator.updateSettings({ PTT_KEY: newKey });
+      setPttLabels(newKey.name);
+    } else {
+      const settings = await window.operator.getSettings();
+      setPttLabels(settings.PTT_KEY?.name || "F1");
+    }
+    
+    if (toggleBtn.textContent === "Disable Operator") {
+      await window.operator.toggle();
+      await window.operator.toggle();
+    }
+  });
+
+  pttModeSelect.addEventListener("change", async () => {
+    await saveSettings(["PTT_MODE"]);
     if (toggleBtn.textContent === "Disable Operator") {
       await window.operator.toggle();
       await window.operator.toggle();

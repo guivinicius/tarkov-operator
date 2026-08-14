@@ -3,6 +3,7 @@ const {
   systemPreferences, session, shell
 } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const { uIOhook, UiohookKey } = require("uiohook-napi");
 
 
 // Ensure consistent userData path between dev and production builds.
@@ -36,9 +37,112 @@ let settingsWindow = null;
 let isEnabled = false;
 const logs = [];
 let isRecording = false;
+let startRecordingPromise = null;
 let captureHandlersBound = false;
 let micAccessRequested = false;
 let pendingScreenshot = null;
+let pttKeyDown = false;
+let keyRecordingDeferred = null;
+
+function handlePttKey(event, type) {
+  const s = settingsStore.load();
+  const pttKey = s.PTT_KEY || { keycode: 59, name: "F1" };
+  const pttMode = s.PTT_MODE || "silence";
+
+  if (keyRecordingDeferred && type === "keydown") {
+    let name = Object.keys(UiohookKey).find(k => UiohookKey[k] === event.keycode) || `Key${event.keycode}`;
+    name = name.replace("Space", "Space").replace("Left", "Left ").replace("Right", "Right ");
+    keyRecordingDeferred.resolve({ keycode: event.keycode, name: name });
+    keyRecordingDeferred = null;
+    return;
+  }
+
+  if (event.keycode !== pttKey.keycode) return;
+
+  if (type === "keydown") {
+    if (pttKeyDown) return; // ignore auto-repeat
+    pttKeyDown = true;
+
+    if (pttMode === "hold") {
+      startRecording();
+    } else if (pttMode === "toggle") {
+      if (isRecording) stopRecording(false);
+      else startRecording();
+    } else if (pttMode === "silence") {
+      if (isRecording) stopRecording(true); // second tap cancels in silence mode
+      else startRecording();
+    }
+  } else if (type === "keyup") {
+    pttKeyDown = false;
+    if (pttMode === "hold") {
+      stopRecording(false);
+    }
+  }
+}
+
+function onUiohookKeydown(e) { handlePttKey(e, "keydown"); }
+function onUiohookKeyup(e) { handlePttKey(e, "keyup"); }
+
+async function startRecording() {
+    if (isRecording || startRecordingPromise) return;
+    
+    if (platform() === "darwin" && !micAccessRequested) {
+      micAccessRequested = true;
+      try {
+        await systemPreferences.askForMediaAccess("microphone");
+      } catch (_) {}
+    }
+
+    isRecording = true;
+    updateTrayMenu();
+    
+    const pttSettings = settingsStore.load();
+    log("info", `[ptt] Recording started (Mode: ${pttSettings.PTT_MODE || "silence"})...`);
+
+    if (pttSettings.SCREENSHOT_ENABLED === true) {
+      const tScreenshot = Date.now();
+      pendingScreenshot = screenCapture.captureScreen(pttSettings.SCREENSHOT_DISPLAY || undefined)
+        .then((result) => {
+          if (result) log("info", `[screenshot] captured ${result.width}x${result.height} in ${((Date.now() - tScreenshot) / 1000).toFixed(2)}s`);
+          return result;
+        })
+        .catch((err) => {
+          log("error", `[screenshot] ${err.message}`);
+          return null;
+        });
+    } else {
+      pendingScreenshot = null;
+    }
+
+    startRecordingPromise = (async () => {
+      try {
+        await audioCapture.startCapture();
+      } catch (err) {
+        isRecording = false;
+        updateTrayMenu();
+        log("error", `[capture] ${err.message}`);
+      } finally {
+        startRecordingPromise = null;
+      }
+    })();
+}
+
+async function stopRecording(cancel = false) {
+    if (!isRecording) return;
+    isRecording = false;
+    
+    if (startRecordingPromise) {
+      await startRecordingPromise;
+    }
+
+    log("info", cancel ? "[ptt] Cancelled" : "[ptt] Stopped");
+    if (cancel) {
+      audioCapture.cancelCapture();
+    } else {
+      audioCapture.stopCapture();
+    }
+    updateTrayMenu();
+}
 
 function llmApiKey(s) {
   switch (s.LLM_PROVIDER) {
@@ -181,7 +285,8 @@ function enablePTT() {
   if (isEnabled) return;
 
   const s = settingsStore.load();
-  const pttKey = s.PTT_KEY || "F1";
+  const pttKey = s.PTT_KEY || { name: "F1" };
+  const pttKeyName = pttKey.name || "F1";
 
   if (!llmApiKey(s)) {
     const keyName = `${s.LLM_PROVIDER.toUpperCase()}_API_KEY`;
@@ -241,72 +346,24 @@ function enablePTT() {
     });
   }
 
-  // Tap-to-talk, not hold-to-talk: globalShortcut has no key-release event, so
-  // inferring release from OS key auto-repeat behaved differently per keyboard.
-  const registered = globalShortcut.register(pttKey, async () => {
-    if (isRecording) {
-      isRecording = false;
-      log("info", "[ptt] Cancelled");
-      audioCapture.cancelCapture();
-      updateTrayMenu();
-      return;
-    }
 
-    if (platform() === "darwin" && !micAccessRequested) {
-      micAccessRequested = true;
-      try {
-        await systemPreferences.askForMediaAccess("microphone");
-      } catch (_) {
-        // Denial is surfaced by onCaptureError with remediation guidance.
-      }
-    }
 
-    isRecording = true;
-    updateTrayMenu();
-    log("info", "[ptt] Recording... (talk, then stop — it ends on silence)");
-
-    // Capture screenshot immediately at tap-time (before user talks).
-    const pttSettings = settingsStore.load();
-    if (pttSettings.SCREENSHOT_ENABLED === true) {
-      const tScreenshot = Date.now();
-      pendingScreenshot = screenCapture.captureScreen(pttSettings.SCREENSHOT_DISPLAY || undefined)
-        .then((result) => {
-          if (result) {
-            log("info", `[screenshot] captured ${result.width}x${result.height} in ${((Date.now() - tScreenshot) / 1000).toFixed(2)}s`);
-          }
-          return result;
-        })
-        .catch((err) => {
-          log("error", `[screenshot] ${err.message}`);
-          return null;
-        });
-    } else {
-      pendingScreenshot = null;
-    }
-
-    try {
-      await audioCapture.startCapture();
-    } catch (err) {
-      isRecording = false;
-      updateTrayMenu();
-      log("error", `[capture] ${err.message}`);
-    }
-  });
-
-  if (!registered) {
-    log("error", `Failed to register global hotkey ${pttKey}. It may be in use.`);
-    return;
-  }
+  uIOhook.on("keydown", onUiohookKeydown);
+  uIOhook.on("keyup", onUiohookKeyup);
+  try {
+      uIOhook.start();
+  } catch(e) { /* already started */ }
 
   isEnabled = true;
-  log("info", `Operator enabled. Hold ${pttKey} to talk.`);
+  log("info", `Operator enabled. PTT Key: ${pttKeyName}. Mode: ${s.PTT_MODE || "silence"}`);
   updateTrayMenu();
   sendStatus();
 }
 
 function disablePTT() {
   if (!isEnabled) return;
-  globalShortcut.unregisterAll();
+  uIOhook.off("keydown", onUiohookKeydown);
+  uIOhook.off("keyup", onUiohookKeyup);
   if (isRecording) {
     isRecording = false;
     audioCapture.cancelCapture();
@@ -579,6 +636,25 @@ function sendStatus() {
 }
 
 ipcMain.handle("get-status", () => ({ enabled: isEnabled }));
+ipcMain.handle("record-ptt-key", async () => {
+  return new Promise((resolve) => {
+    const wasDisabled = !isEnabled;
+    if (wasDisabled) {
+      try { uIOhook.start(); } catch(e) {}
+      uIOhook.on("keydown", onUiohookKeydown);
+    }
+    
+    keyRecordingDeferred = {
+      resolve: (keyObj) => {
+        if (wasDisabled) {
+          uIOhook.off("keydown", onUiohookKeydown);
+        }
+        resolve(keyObj);
+      }
+    };
+  });
+});
+
 ipcMain.handle("toggle", () => { toggleEnabled(); return { enabled: isEnabled }; });
 ipcMain.handle("get-logs", () => logs.slice(-200));
 

@@ -21,7 +21,8 @@ function getDefaults() {
     TTS_MODEL: "",
     VOICE_LANGUAGE: "en",
     RADIO_FILTER: false,
-    PTT_KEY: "F1",
+    PTT_KEY: { keycode: 59, name: "F1" }, // uiohook-napi keycode for F1
+    PTT_MODE: "silence", // "hold", "toggle", "silence"
     SCREENSHOT_ENABLED: false,
     SCREENSHOT_DISPLAY: "",
   };

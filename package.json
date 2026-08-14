@@ -27,7 +27,8 @@
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "electron-updater": "^6.8.9",
-    "openai": "^4.0.0"
+    "openai": "^4.0.0",
+    "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",

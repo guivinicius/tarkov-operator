@@ -16,20 +16,7 @@
       <span id="status-text">Idle</span>
       <div class="ptt-picker">
         <label>PTT</label>
-        <select id="input-PTT_KEY">
-          <option value="F1">F1</option>
-          <option value="F2">F2</option>
-          <option value="F3">F3</option>
-          <option value="F4">F4</option>
-          <option value="F5">F5</option>
-          <option value="F6">F6</option>
-          <option value="F7">F7</option>
-          <option value="F8">F8</option>
-          <option value="F9">F9</option>
-          <option value="F10">F10</option>
-          <option value="F11">F11</option>
-          <option value="F12">F12</option>
-        </select>
+        <button id="btn-record-ptt" class="btn-sm" style="min-width: 60px;">F1</button>
       </div>
       <button id="toggle-btn">Enable Operator</button>
     </div>
@@ -348,6 +335,14 @@
           recording ends on silence. Tap again while speaking to cancel.
           Recording is capped at 30 seconds.
         </p>
+        <div class="field" style="margin-top: 16px;">
+          <label>Mode</label>
+          <select id="input-PTT_MODE">
+            <option value="silence">Silence (Auto-stop)</option>
+            <option value="hold">Hold to talk</option>
+            <option value="toggle">Toggle (Press to start/stop)</option>
+          </select>
+        </div>
       </div>
     </div>
 

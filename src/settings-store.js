@@ -25,6 +25,7 @@ function getDefaults() {
     PTT_MODE: "silence", // "hold", "toggle", "silence"
     SCREENSHOT_ENABLED: false,
     SCREENSHOT_DISPLAY: "",
+    PLAYER_NAME: "",
   };
 }
 

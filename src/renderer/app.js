@@ -620,6 +620,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     await saveSettings(["LLM_BASE_URL"]);
   });
 
+  const playerNameInput = $("input-PLAYER_NAME");
+  if (playerNameInput) {
+    playerNameInput.addEventListener("change", async () => {
+      await saveSettings(["PLAYER_NAME"]);
+    });
+  }
+
   llmModel.addEventListener("change", async () => {
     await saveSettings(["LLM_MODEL"]);
   });

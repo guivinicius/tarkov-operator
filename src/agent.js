@@ -43,12 +43,20 @@ function chooseRetrieval(caps) {
 async function process(userText, opts = {}) {
   // 1. Memory profile — injected in ALL cases (not part of the RAG/tools tradeoff — D7)
   let memoryProfile = "";
-  let languageDirective = "";
+  let customDirectives = "";
   try {
     const s = settingsStore.load();
     if (s.VOICE_LANGUAGE === "pt-br") {
-      languageDirective = "\n[LANGUAGE]\nYou must speak and respond in Portuguese (pt-BR).\n[/LANGUAGE]\n";
+      customDirectives += "\n[LANGUAGE]\nYou must speak and respond in Portuguese (pt-BR).\n[/LANGUAGE]\n";
     }
+
+    if (s.PLAYER_NAME && s.PLAYER_NAME.trim().length > 0) {
+      customDirectives += `\n[IDENTITY]\nAddress the user as "${s.PLAYER_NAME.trim()}".\n[/IDENTITY]\n`;
+    } else {
+      customDirectives += `\n[IDENTITY]\nDo not address the user by any name, title, or rank. Just answer directly.\n[/IDENTITY]\n`;
+    }
+
+    customDirectives += `\n[PRONUNCIATION]\nWhen referring to acronyms (e.g., AKS-74U, M4A1, AP-20), write them with spaces or hyphens so the TTS engine pronounces the letters individually (e.g., "A K S 7 4 U").\n[/PRONUNCIATION]\n`;
 
     const allMemory = dataStore.getAllMemory();
     // Filter out empty values so we don't send "Player Name: " to the LLM
@@ -125,9 +133,9 @@ async function process(userText, opts = {}) {
     systemPromptAppend += memoryProfile;
     logger.debug(`[agent] memory_injected=${memoryProfile.length}chars`);
   }
-  if (languageDirective) {
-    systemPromptAppend += languageDirective;
-    logger.debug(`[agent] language_directive_injected`);
+  if (customDirectives) {
+    systemPromptAppend += customDirectives;
+    logger.debug(`[agent] custom_directives_injected`);
   }
 
   // 5. Agent loop

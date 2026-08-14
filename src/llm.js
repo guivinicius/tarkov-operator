@@ -23,6 +23,13 @@ LIMITATIONS:
 
 You are not an assistant. You are ops. Short. Professional.`;
 
+// Replacement LIMITATIONS block injected when a screenshot is attached.
+const VISION_LIMITATION = `LIMITATIONS:
+- You can see the Operator's screen in the attached screenshot. Use it to understand their situation.
+- Can't read game memory or interact with the game.
+
+You are not an assistant. You are ops. Short. Professional.`;
+
 let cachedClient = null;
 let cachedApiKey = "";
 let cachedBaseURL = "";
@@ -55,14 +62,34 @@ async function ask(userMessage, opts = {}) {
   const client = getClient(apiKey, baseURL);
 
   let systemContent = opts.systemPrompt || SYSTEM_PROMPT;
+
+  // When a screenshot is attached, swap the "can't see" limitation for vision-aware text.
+  if (opts.imageBase64) {
+    systemContent = systemContent.replace(
+      /LIMITATIONS:\n- Can't see the screen[^]*?You are not an assistant\./,
+      VISION_LIMITATION.replace(/\n$/, "")
+    );
+  }
+
   if (opts.systemPromptAppend) {
     systemContent += "\n\n" + opts.systemPromptAppend;
+  }
+
+  // Build user content: plain string when text-only, array of parts when image attached.
+  let userContent;
+  if (opts.imageBase64) {
+    userContent = [
+      { type: "text", text: userMessage },
+      { type: "image_url", image_url: { url: `data:image/jpeg;base64,${opts.imageBase64}`, detail: "low" } },
+    ];
+  } else {
+    userContent = userMessage;
   }
 
   const messages = [
     { role: "system", content: systemContent },
     ...conversationHistory,
-    { role: "user", content: userMessage },
+    { role: "user", content: userContent },
   ];
 
   logger.debug(`[llm] sys_prompt=${systemContent.length}chars history=${conversationHistory.length}msgs tools=${opts.tools?.length || 0}`);
@@ -138,6 +165,7 @@ async function ask(userMessage, opts = {}) {
       })),
     });
   } else {
+    // Store only the text in history — strip images to prevent token accumulation.
     conversationHistory.push(
       { role: "user", content: userMessage },
       { role: "assistant", content: text },

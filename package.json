@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
+    "electron-updater": "^6.8.9",
     "openai": "^4.0.0"
   },
   "devDependencies": {
@@ -60,7 +61,8 @@
       "category": "public.app-category.utilities",
       "icon": "build/icon.png",
       "extendInfo": {
-        "NSMicrophoneUsageDescription": "Tarkov Operator uses the microphone for push-to-talk questions."
+        "NSMicrophoneUsageDescription": "Tarkov Operator uses the microphone for push-to-talk questions.",
+        "NSScreenCaptureUsageDescription": "Tarkov Operator captures a screenshot when you use push-to-talk to give the AI visual context."
       }
     },
     "win": {

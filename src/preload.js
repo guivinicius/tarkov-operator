@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("operator", {
   getLogs: () => ipcRenderer.invoke("get-logs"),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   updateSettings: (s) => ipcRenderer.invoke("update-settings", s),
+  getDisplays: () => ipcRenderer.invoke("get-displays"),
 
   fetchModels: (category, provider, apiKey, baseURL) =>
     ipcRenderer.invoke("fetch-models", category, provider, apiKey, baseURL),
@@ -57,4 +58,13 @@ contextBridge.exposeInMainWorld("operator", {
   clearMemory: () => ipcRenderer.invoke("clear-memory"),
 
   testTTS: (opts) => ipcRenderer.invoke("test-tts", opts),
+
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("download-update"),
+  installUpdate: () => ipcRenderer.invoke("install-update"),
+  onUpdateStatus: (cb) => {
+    const h = (_e, data) => cb(data);
+    ipcRenderer.on("update-status", h);
+    return () => ipcRenderer.removeListener("update-status", h);
+  },
 });

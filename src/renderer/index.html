@@ -39,6 +39,7 @@
       <button class="tab active" data-tab="home">Home</button>
       <button class="tab" data-tab="providers">Providers</button>
       <button class="tab" data-tab="llm">LLM</button>
+      <button class="tab" data-tab="vision">Vision</button>
       <button class="tab" data-tab="voice">Voice</button>
       <button class="tab" data-tab="data">Data</button>
       <button class="tab" data-tab="system">System</button>
@@ -168,6 +169,36 @@
       </div>
     </div>
 
+    <!-- Tab: Vision -->
+    <div id="tab-vision" class="tab-panel">
+      <div class="card">
+        <h2>Screenshot Context</h2>
+        <p class="hint" style="margin-bottom:12px">
+          Capture the game screen when you press PTT so the LLM can see what you're looking at.
+          Requires a vision-capable model (GPT-4o, Claude, Gemini, etc.).
+        </p>
+        <div class="field" style="margin-bottom: 16px;">
+          <label>Screenshot</label>
+          <label class="toggle">
+            <input type="checkbox" id="input-SCREENSHOT_ENABLED">
+            <span>Enabled</span>
+          </label>
+        </div>
+        <p class="hint" data-depends-on="SCREENSHOT_ENABLED" data-dep-is="true" style="margin-bottom:8px;color:var(--warn)">
+          ⚠ Increases token usage per request. Only the Tarkov game window is captured.
+        </p>
+        <div class="field" data-depends-on="SCREENSHOT_ENABLED" data-dep-is="true">
+          <label>Display</label>
+          <div class="field-row">
+            <select id="input-SCREENSHOT_DISPLAY">
+              <option value="">Primary (default)</option>
+            </select>
+            <button class="btn-sm" id="refresh-displays" title="Refresh displays">⟳</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tab: Voice -->
     <div id="tab-voice" class="tab-panel">
       <div class="card">
@@ -290,6 +321,18 @@
     <!-- Tab: System -->
     <div id="tab-system" class="tab-panel">
       <div class="card">
+        <h2>Updates</h2>
+        <div class="field" style="margin-bottom: 8px;">
+          <label>Status</label>
+          <span id="update-status-text" class="status-msg" style="margin-left:0; color:var(--fg);">Idle</span>
+        </div>
+        <div id="update-actions" style="margin-top: 16px;">
+          <button id="btn-check-update" class="btn-sm">Check for Updates</button>
+          <button id="btn-download-update" class="btn-primary hidden">Download Update</button>
+          <button id="btn-install-update" class="btn-primary hidden">Install & Restart</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:0">
         <h2>Microphone</h2>
         <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5">
           Recording runs inside the app — no external audio tools to install.

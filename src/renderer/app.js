@@ -45,6 +45,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const dataProgressText = $("data-progress-text");
   const dataProgressCurrent = $("data-progress-current");
 
+  const btnCheckUpdate = $("btn-check-update");
+  const btnDownloadUpdate = $("btn-download-update");
+  const btnInstallUpdate = $("btn-install-update");
+  const updateStatusText = $("update-status-text");
+
   // --- Data status elements ---
   const dataStats = {
     items: $("data-items"),
@@ -76,7 +81,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       const depends = el.getAttribute("data-depends-on");
       const depIs = el.getAttribute("data-dep-is");
       const depNot = el.getAttribute("data-dep-not");
-      const actual = $(`input-${depends}`).value;
+      const depEl = $(`input-${depends}`);
+      // For checkboxes, compare against "true"/"false" strings
+      const actual = depEl.type === "checkbox" ? String(depEl.checked) : depEl.value;
       let show = true;
       if (depIs) {
         const accepted = depIs.split(",").map(v => v.trim());
@@ -718,6 +725,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     await saveSettings(["AUTO_FETCH_DATA"]);
   });
 
+  // --- Vision / Screenshot settings ---
+
+  const screenshotEnabled = $("input-SCREENSHOT_ENABLED");
+  const screenshotDisplay = $("input-SCREENSHOT_DISPLAY");
+  const refreshDisplays = $("refresh-displays");
+
+  async function fetchAndPopulateDisplays() {
+    const displays = await window.operator.getDisplays();
+    if (!displays || displays.error) return;
+    const saved = screenshotDisplay.value;
+    // Keep the default option, then add detected displays
+    screenshotDisplay.innerHTML = '<option value="">Primary (default)</option>';
+    for (const d of displays) {
+      const opt = document.createElement("option");
+      opt.value = d.id;
+      opt.textContent = d.name;
+      if (d.id === saved) opt.selected = true;
+      screenshotDisplay.appendChild(opt);
+    }
+  }
+
+  screenshotEnabled.addEventListener("change", async () => {
+    await saveSettings(["SCREENSHOT_ENABLED"]);
+    updateFieldVisibility();
+    if (screenshotEnabled.checked) fetchAndPopulateDisplays();
+  });
+
+  screenshotDisplay.addEventListener("change", async () => {
+    await saveSettings(["SCREENSHOT_DISPLAY"]);
+  });
+
+  refreshDisplays.addEventListener("click", () => fetchAndPopulateDisplays());
+
+  // Populate displays on init if screenshot is enabled
+  if (screenshotEnabled.checked) fetchAndPopulateDisplays();
+
   document.getElementById("clear-memory-btn").addEventListener("click", async () => {
     await window.operator.clearMemory();
     refreshMemory();
@@ -740,6 +783,61 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   window.operator.onStatusChange((s) => updateUI(s.enabled));
+
+  // --- Auto Updates ---
+  
+  if (btnCheckUpdate) {
+    btnCheckUpdate.addEventListener("click", async () => {
+      btnCheckUpdate.disabled = true;
+      updateStatusText.textContent = "Checking for updates...";
+      await window.operator.checkForUpdates();
+    });
+
+    btnDownloadUpdate.addEventListener("click", async () => {
+      btnCheckUpdate.classList.add("hidden");
+      btnDownloadUpdate.classList.add("hidden");
+      updateStatusText.textContent = "Downloading...";
+      await window.operator.downloadUpdate();
+    });
+
+    btnInstallUpdate.addEventListener("click", async () => {
+      await window.operator.installUpdate();
+    });
+
+    window.operator.onUpdateStatus((data) => {
+      switch (data.event) {
+        case "update-available":
+          updateStatusText.textContent = `Update available: v${data.info.version}`;
+          btnCheckUpdate.classList.add("hidden");
+          btnDownloadUpdate.classList.remove("hidden");
+          btnInstallUpdate.classList.add("hidden");
+          break;
+        case "update-not-available":
+          updateStatusText.textContent = "App is up to date";
+          btnCheckUpdate.disabled = false;
+          btnCheckUpdate.classList.remove("hidden");
+          btnDownloadUpdate.classList.add("hidden");
+          btnInstallUpdate.classList.add("hidden");
+          break;
+        case "download-progress":
+          updateStatusText.textContent = `Downloading... ${Math.round(data.progressObj.percent)}%`;
+          break;
+        case "update-downloaded":
+          updateStatusText.textContent = "Update ready to install";
+          btnCheckUpdate.classList.add("hidden");
+          btnDownloadUpdate.classList.add("hidden");
+          btnInstallUpdate.classList.remove("hidden");
+          break;
+        case "error":
+          updateStatusText.textContent = `Error: ${data.message}`;
+          btnCheckUpdate.disabled = false;
+          btnCheckUpdate.classList.remove("hidden");
+          btnDownloadUpdate.classList.add("hidden");
+          btnInstallUpdate.classList.add("hidden");
+          break;
+      }
+    });
+  }
 
   // --- Pipeline Error ---
   const homeError = $("home-error");

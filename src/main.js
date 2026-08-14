@@ -2,6 +2,8 @@ const {
   app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, globalShortcut, Notification,
   systemPreferences, session, shell
 } = require("electron");
+const { autoUpdater } = require("electron-updater");
+
 
 // Ensure consistent userData path between dev and production builds.
 // package.json name (dev) differs from electron-builder productName (prod).
@@ -17,6 +19,7 @@ const { platform } = require("os");
 
 const audioCapture = require("./audio-capture");
 const audioPlayback = require("./audio-playback");
+const screenCapture = require("./screen-capture");
 const stt = require("./stt");
 const tts = require("./tts");
 const llm = require("./llm");
@@ -35,6 +38,7 @@ const logs = [];
 let isRecording = false;
 let captureHandlersBound = false;
 let micAccessRequested = false;
+let pendingScreenshot = null;
 
 function llmApiKey(s) {
   switch (s.LLM_PROVIDER) {
@@ -90,11 +94,15 @@ logger.setSink((entry) => {
 
 // --- PTT Loop -------------------------------------------------------------
 
-function processPipeline(audioBuffer) {
+function processPipeline(audioBuffer, screenshotBase64) {
   const duration = (audioBuffer.length - 44) / (16000 * 2); // rough: 16-bit mono WAV
   log("info", `[capture] ${duration.toFixed(1)}s / ${(audioBuffer.length / 1024).toFixed(0)}KB`);
 
   const s = settingsStore.load();
+  const useScreenshot = s.SCREENSHOT_ENABLED === true && screenshotBase64;
+  if (useScreenshot) {
+    log("info", `[screenshot] attached (${Math.round(screenshotBase64.length * 3 / 4 / 1024)}KB JPEG)`);
+  }
 
   Promise.resolve().then(async () => {
     // 1. STT
@@ -123,6 +131,7 @@ function processPipeline(audioBuffer) {
       apiKey: llmApiKey(s),
       baseURL: saneBaseURL,
       model: s.LLM_MODEL,
+      imageBase64: useScreenshot ? screenshotBase64 : undefined,
     });
     const wordCount = agentResult.text ? agentResult.text.split(/\s+/).length : 0;
     log("info", `[llm] ${(Date.now() - tLlm) / 1000}s, ${wordCount} words, model=${agentResult.model}, pt=${agentResult.promptTokens} ct=${agentResult.completionTokens}`);
@@ -195,9 +204,14 @@ function enablePTT() {
 
     audioCapture.onCaptureComplete((buffer) => {
       isRecording = false;
+      // Resolve pending screenshot (if any) before processing.
+      const screenshotPromise = pendingScreenshot || Promise.resolve(null);
+      pendingScreenshot = null;
       updateTrayMenu();
       if (buffer && buffer.length > 4800) {
-        processPipeline(buffer);
+        screenshotPromise.then((screenshot) => {
+          processPipeline(buffer, screenshot ? screenshot.base64 : null);
+        });
       } else {
         log("info", `[ptt] Buffer too short (${buffer ? buffer.length : 0}B), ignoring`);
       }
@@ -250,6 +264,25 @@ function enablePTT() {
     isRecording = true;
     updateTrayMenu();
     log("info", "[ptt] Recording... (talk, then stop — it ends on silence)");
+
+    // Capture screenshot immediately at tap-time (before user talks).
+    const pttSettings = settingsStore.load();
+    if (pttSettings.SCREENSHOT_ENABLED === true) {
+      const tScreenshot = Date.now();
+      pendingScreenshot = screenCapture.captureScreen(pttSettings.SCREENSHOT_DISPLAY || undefined)
+        .then((result) => {
+          if (result) {
+            log("info", `[screenshot] captured ${result.width}x${result.height} in ${((Date.now() - tScreenshot) / 1000).toFixed(2)}s`);
+          }
+          return result;
+        })
+        .catch((err) => {
+          log("error", `[screenshot] ${err.message}`);
+          return null;
+        });
+    } else {
+      pendingScreenshot = null;
+    }
 
     try {
       await audioCapture.startCapture();
@@ -580,6 +613,14 @@ ipcMain.handle("fetch-voices", async (_event, provider, apiKey) => {
   }
 });
 
+ipcMain.handle("get-displays", async () => {
+  try {
+    return await screenCapture.getDisplays();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 ipcMain.handle("validate-key", async (_event, provider, apiKey) => {
   const result = await keyValidator.validate(provider, apiKey);
   log(result.ok ? "info" : "error", `[validate] ${provider}: ${result.message}`);
@@ -678,6 +719,45 @@ ipcMain.handle("test-tts", async (_event, opts) => {
   }
 });
 
+// --- Auto Updater -----------------------------------------------------------
+
+autoUpdater.autoDownload = false;
+
+function sendUpdateStatus(event, data) {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.webContents.send("update-status", { event, ...data });
+  }
+}
+
+autoUpdater.on("update-available", (info) => sendUpdateStatus("update-available", { info }));
+autoUpdater.on("update-not-available", (info) => sendUpdateStatus("update-not-available", { info }));
+autoUpdater.on("download-progress", (progressObj) => sendUpdateStatus("download-progress", { progressObj }));
+autoUpdater.on("update-downloaded", (info) => sendUpdateStatus("update-downloaded", { info }));
+autoUpdater.on("error", (err) => sendUpdateStatus("error", { message: err.message }));
+
+ipcMain.handle("check-for-updates", async () => {
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { ok: true, result };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("download-update", async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("install-update", () => {
+  autoUpdater.quitAndInstall();
+  return { ok: true };
+});
+
 // --- App lifecycle --------------------------------------------------------
 
 app.whenReady().then(() => {
@@ -734,6 +814,10 @@ app.whenReady().then(() => {
       });
     }
   }
+
+  autoUpdater.checkForUpdates().catch(err => {
+    log("error", `[updater] Startup check failed: ${err.message}`);
+  });
 });
 
 app.on("window-all-closed", () => {});

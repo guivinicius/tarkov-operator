@@ -16,6 +16,7 @@ const http = require("http");
 
 // Per-model cache: "<baseURL>:<modelId>" → true | false
 const _modelCache = new Map();
+const _visionCache = new Map();
 
 // Per-URL list cache: baseURL → { models: Array, fetchedAt: number }
 const _listCache = new Map();
@@ -41,6 +42,27 @@ function supportsToolsFromList(modelsArray, modelId) {
     ? entry.supported_parameters
     : [];
   return params.includes("tools");
+}
+
+/**
+ * Pure helper — exported for tests.
+ *
+ * Searches a pre-fetched models array for modelId and returns:
+ *   true  — found, "image" in input_modalities
+ *   false — found, "image" NOT in input_modalities
+ *   null  — not found in the list
+ *
+ * @param {Array}  modelsArray  Array of model objects from /models response
+ * @param {string} modelId      Model id to look up (e.g. "openai/gpt-4o")
+ */
+function supportsVisionFromList(modelsArray, modelId) {
+  if (!Array.isArray(modelsArray)) return null;
+  const entry = modelsArray.find((m) => m.id === modelId);
+  if (!entry) return null;
+  const modalities = Array.isArray(entry.input_modalities)
+    ? entry.input_modalities
+    : [];
+  return modalities.includes("image");
 }
 
 /**
@@ -126,4 +148,50 @@ async function supportsTools({ provider, apiKey, baseURL, model } = {}) {
   return result;
 }
 
-module.exports = { supportsTools, supportsToolsFromList };
+/**
+ * Determine whether a model supports vision capability.
+ *
+ * @param {object} opts
+ * @param {string} [opts.provider]  e.g. "openrouter", "openai", "anthropic"
+ * @param {string} [opts.apiKey]
+ * @param {string} [opts.baseURL]   e.g. "https://openrouter.ai/api/v1"
+ * @param {string} [opts.model]     e.g. "openai/gpt-4o"
+ * @returns {Promise<true|false|null>}
+ */
+async function supportsVision({ provider, apiKey, baseURL, model } = {}) {
+  // Only OpenRouter exposes input_modalities reliably
+  const isOpenRouter =
+    provider === "openrouter" ||
+    (typeof baseURL === "string" && baseURL.includes("openrouter.ai"));
+  if (!isOpenRouter) return null;
+
+  // Per-model in-process cache (true or false only — never cache null/unknown)
+  const cacheKey = `vision:${baseURL}:${model}`;
+  if (_visionCache.has(cacheKey)) return _visionCache.get(cacheKey);
+
+  // Use cached list if fresh
+  let models;
+  const cached = _listCache.get(baseURL);
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+    models = cached.models;
+  } else {
+    models = await fetchModelsList(baseURL);
+    if (models !== null) {
+      _listCache.set(baseURL, { models, fetchedAt: Date.now() });
+    }
+  }
+
+  if (models === null) {
+    // Network failure — return null, do NOT cache as false
+    return null;
+  }
+
+  const result = supportsVisionFromList(models, model);
+  // Only cache definitive answers (true / false); null = model not found → not cached
+  if (result !== null) {
+    _visionCache.set(cacheKey, result);
+  }
+  return result;
+}
+
+module.exports = { supportsTools, supportsToolsFromList, supportsVision, supportsVisionFromList };

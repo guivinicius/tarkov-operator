@@ -86,6 +86,26 @@ async function process(userText, opts = {}) {
     logger.debug(`[agent] routing=${retrieval} tools=${activeSchemas.length}`);
   }
 
+  // 2b. Vision capability — determine whether to forward screenshot to LLM
+  let imageBase64 = null;
+  if (opts.imageBase64) {
+    if (isLocalConfig(opts)) {
+      logger.debug(`[agent] vision=skipped (local config)`);
+    } else {
+      const visionCaps = await modelCaps.supportsVision({
+        apiKey: opts.apiKey,
+        baseURL: opts.baseURL,
+        model: opts.model,
+      });
+      if (visionCaps === false) {
+        logger.debug(`[agent] vision=unsupported (model does not accept images)`);
+      } else {
+        imageBase64 = opts.imageBase64;
+        logger.debug(`[agent] vision=enabled (caps=${visionCaps}) image=${Math.round(imageBase64.length / 1024)}KB`);
+      }
+    }
+  }
+
   // 3. RAG context — only when retrieval === "rag" (never together with full toolset)
   let ragContext = "";
   if (retrieval === "rag") {
@@ -127,6 +147,8 @@ async function process(userText, opts = {}) {
     };
 
     if (toolsEnabled) llmOpts.tools = activeSchemas;
+    // Attach screenshot only on the first iteration (the user turn).
+    if (imageBase64 && i === 0) llmOpts.imageBase64 = imageBase64;
 
     const result = await llm.ask(userText, llmOpts);
 

@@ -25,6 +25,7 @@ src/
 ├── tts.js                # TTS (ElevenLabs, OpenRouter, system)
 ├── audio-capture.js      # Mic capture host (hidden renderer)
 ├── audio-playback.js     # Playback via platform player
+├── screen-capture.js     # Screen capture for vision context
 ├── data-store.js         # SQLite + FTS5 game data cache
 ├── tarkov-dev.js         # GraphQL client for tarkov.dev
 ├── rag.js                # RAG context from cached data
@@ -88,6 +89,7 @@ src/
 
 ## Gotchas
 
+- **Screen recording permission.** macOS requires granting Screen Recording permission in System Settings > Privacy & Security for screenshot capture to work.
 - **No SoX required.** Microphone capture is handled in-process via Chromium.
 - **npm test** must run under Electron's Node ABI because `better-sqlite3` is compiled against it.
 - **tarkov.dev GraphQL:** Task has no description. Use objectives and requirements instead.

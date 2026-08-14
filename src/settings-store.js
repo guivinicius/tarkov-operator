@@ -22,6 +22,8 @@ function getDefaults() {
     VOICE_LANGUAGE: "en",
     RADIO_FILTER: false,
     PTT_KEY: "F1",
+    SCREENSHOT_ENABLED: false,
+    SCREENSHOT_DISPLAY: "",
   };
 }
 

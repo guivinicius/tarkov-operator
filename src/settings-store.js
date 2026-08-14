@@ -19,7 +19,8 @@ function getDefaults() {
     TTS_PROVIDER: "local",
     TTS_VOICE: "",
     TTS_MODEL: "",
-    VOICE_LANGUAGE: "en",
+    STT_LANGUAGE: "en",
+    TTS_LANGUAGE: "en",
     RADIO_FILTER: false,
     PTT_KEY: { keycode: 59, name: "F1" }, // uiohook-napi keycode for F1
     PTT_MODE: "silence", // "hold", "toggle", "silence"
@@ -47,7 +48,20 @@ function init(appPath) {
 }
 
 function load() {
-  return { ...getDefaults(), ...dataStore.getAllSettings() };
+  const defaults = getDefaults();
+  const settings = dataStore.getAllSettings();
+  const merged = { ...defaults, ...settings };
+
+  // Migrate old VOICE_LANGUAGE to split STT/TTS languages
+  if (settings.VOICE_LANGUAGE && !settings.STT_LANGUAGE && !settings.TTS_LANGUAGE) {
+    merged.STT_LANGUAGE = settings.VOICE_LANGUAGE;
+    merged.TTS_LANGUAGE = settings.VOICE_LANGUAGE;
+    dataStore.setSetting("STT_LANGUAGE", merged.STT_LANGUAGE);
+    dataStore.setSetting("TTS_LANGUAGE", merged.TTS_LANGUAGE);
+    dataStore.deleteSetting("VOICE_LANGUAGE");
+  }
+
+  return merged;
 }
 
 function save(partial) {

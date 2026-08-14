@@ -199,13 +199,7 @@
     <!-- Tab: Voice -->
     <div id="tab-voice" class="tab-panel">
       <div class="card">
-        <div class="field" style="margin-bottom: 16px;">
-          <label>Language</label>
-          <select id="input-VOICE_LANGUAGE">
-            <option value="en">English (en)</option>
-            <option value="pt-br">Portuguese (pt-BR)</option>
-          </select>
-        </div>
+
         <div class="field" style="margin-bottom: 16px;">
           <label>Radio Filter</label>
           <label class="toggle">
@@ -215,6 +209,15 @@
         </div>
         <h2>Speech-to-Text</h2>
         <p class="plain-summary" id="stt-summary">Your voice is transcribed with the OpenRouter key you already added.</p>
+        <div class="field" style="margin-top: 16px;">
+          <label>Input Language</label>
+          <select id="input-STT_LANGUAGE">
+            <option value="en">English (en)</option>
+            <option value="pt-br">Portuguese (pt-BR)</option>
+            <option value="es">Spanish (es)</option>
+            <option value="ru">Russian (ru)</option>
+          </select>
+        </div>
         <div class="field" style="margin-top: 16px;">
           <label>Provider</label>
           <select id="input-STT_PROVIDER">
@@ -239,6 +242,18 @@
       </div>
       <div class="card">
         <h2>Text-to-Speech</h2>
+        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5;margin-bottom:16px;">
+          <strong>Note:</strong> Some TTS voices (especially Local or ElevenLabs v1) only support English. If you choose another language, they may speak it with a heavy accent.
+        </p>
+        <div class="field">
+          <label>Output Language</label>
+          <select id="input-TTS_LANGUAGE">
+            <option value="en">English (en)</option>
+            <option value="pt-br">Portuguese (pt-BR)</option>
+            <option value="es">Spanish (es)</option>
+            <option value="ru">Russian (ru)</option>
+          </select>
+        </div>
         <div class="field">
           <label>Provider</label>
           <select id="input-TTS_PROVIDER">

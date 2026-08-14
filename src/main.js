@@ -216,7 +216,7 @@ function processPipeline(audioBuffer, screenshotBase64) {
       apiKey: sttApiKey(s),
       model: s.STT_MODEL,
       provider: s.STT_PROVIDER,
-      language: s.VOICE_LANGUAGE,
+      language: s.STT_LANGUAGE,
     });
     if (!sttResult.text) {
       log("info", "[stt] No speech detected (empty/filtered)");
@@ -258,7 +258,7 @@ function processPipeline(audioBuffer, screenshotBase64) {
       apiKey: ttsApiKey,
       voice: s.TTS_VOICE || undefined,
       model: s.TTS_MODEL || undefined,
-      language: s.VOICE_LANGUAGE,
+      language: s.TTS_LANGUAGE,
     });
     log("info", `[tts] ${(Date.now() - tTts) / 1000}s, format=${ttsResult.format}`);
 

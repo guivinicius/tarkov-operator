@@ -46,8 +46,13 @@ async function process(userText, opts = {}) {
   let customDirectives = "";
   try {
     const s = settingsStore.load();
-    if (s.VOICE_LANGUAGE === "pt-br") {
-      customDirectives += "\n[LANGUAGE]\nYou must speak and respond in Portuguese (pt-BR).\n[/LANGUAGE]\n";
+    
+    if (s.TTS_LANGUAGE && s.TTS_LANGUAGE !== "en") {
+      let langName = "English";
+      if (s.TTS_LANGUAGE === "pt-br") langName = "Portuguese (pt-BR)";
+      else if (s.TTS_LANGUAGE === "es") langName = "Spanish (es)";
+      else if (s.TTS_LANGUAGE === "ru") langName = "Russian (ru)";
+      customDirectives += `\n[LANGUAGE]\nYou must speak and respond in ${langName}.\n[/LANGUAGE]\n`;
     }
 
     if (s.PLAYER_NAME && s.PLAYER_NAME.trim().length > 0) {

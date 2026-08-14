@@ -590,10 +590,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     await saveSettings(["TTS_VOICE"]);
   });
 
-  const voiceLanguage = $("input-VOICE_LANGUAGE");
-  if (voiceLanguage) {
-    voiceLanguage.addEventListener("change", async () => {
-      await saveSettings(["VOICE_LANGUAGE"]);
+  const sttLanguage = $("input-STT_LANGUAGE");
+  if (sttLanguage) {
+    sttLanguage.addEventListener("change", async () => {
+      await saveSettings(["STT_LANGUAGE"]);
+    });
+  }
+
+  const ttsLanguage = $("input-TTS_LANGUAGE");
+  if (ttsLanguage) {
+    ttsLanguage.addEventListener("change", async () => {
+      await saveSettings(["TTS_LANGUAGE"]);
     });
   }
 
@@ -609,7 +616,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         settings.TTS_PROVIDER === "openai" ? settings.OPENAI_API_KEY : "",
       voice: settings.TTS_VOICE,
       model: settings.TTS_MODEL,
-      language: settings.VOICE_LANGUAGE,
+      language: settings.TTS_LANGUAGE,
     });
     testTtsStatus.textContent = result && result.error ? `Error: ${result.error}` : "Done";
     testTtsBtn.disabled = false;

@@ -162,17 +162,68 @@ function stopHook() {
   uiohookActive = false;
 }
 
-function registerGlobalShortcutFallback(pttKey) {
-  if (globalShortcutRegistered) {
-    try { globalShortcut.unregister(globalShortcutRegistered); } catch (_) {}
-    globalShortcutRegistered = null;
-  }
+function toElectronAccelerator(name) {
+  if (!name || typeof name !== "string") return null;
+  if (name.startsWith("Mouse")) return null;
+  const map = {
+    Space: "Space",
+    Enter: "Return",
+    Escape: "Escape",
+    Esc: "Escape",
+    Tab: "Tab",
+    Backspace: "Backspace",
+    CapsLock: "Capslock",
+    Minus: "-",
+    Equal: "=",
+    BracketLeft: "[",
+    BracketRight: "]",
+    Backslash: "\\",
+    Semicolon: ";",
+    Quote: "'",
+    Comma: ",",
+    Period: ".",
+    Slash: "/",
+    Backquote: "`",
+    Delete: "Delete",
+    Insert: "Insert",
+    Home: "Home",
+    End: "End",
+    PageUp: "PageUp",
+    PageDown: "PageDown",
+    ArrowUp: "Up",
+    ArrowDown: "Down",
+    ArrowLeft: "Left",
+    ArrowRight: "Right",
+    Numpad0: "num0",
+    Numpad1: "num1",
+    Numpad2: "num2",
+    Numpad3: "num3",
+    Numpad4: "num4",
+    Numpad5: "num5",
+    Numpad6: "num6",
+    Numpad7: "num7",
+    Numpad8: "num8",
+    Numpad9: "num9",
+    NumpadAdd: "numadd",
+    NumpadSubtract: "numsub",
+    NumpadMultiply: "nummult",
+    NumpadDivide: "numdiv",
+    NumpadDecimal: "numdec",
+  };
+  if (map[name]) return map[name];
+  if (/^F\d{1,2}$/i.test(name)) return name.toUpperCase();
+  if (/^[A-Za-z0-9]$/.test(name)) return name.toUpperCase();
+  return null;
+}
 
-  const keyName = pttKey.name;
-  if (!keyName || pttKey.mouseButton !== undefined) return;
+function registerGlobalShortcut(pttKey) {
+  unregisterGlobalShortcut();
+
+  const accelerator = toElectronAccelerator(pttKey?.name);
+  if (!accelerator || pttKey?.mouseButton !== undefined) return;
 
   try {
-    const registered = globalShortcut.register(keyName, () => {
+    const registered = globalShortcut.register(accelerator, () => {
       const s = settingsStore.load();
       const pttMode = s.PTT_MODE || "silence";
       if (pttMode === "hold") {
@@ -187,11 +238,13 @@ function registerGlobalShortcutFallback(pttKey) {
       }
     });
     if (registered) {
-      globalShortcutRegistered = keyName;
-      log("info", `[ptt] Registered Electron global shortcut: ${keyName}`);
+      globalShortcutRegistered = accelerator;
+      log("info", `[ptt] Registered global shortcut: ${accelerator}`);
+    } else {
+      logger.warn(`[ptt] Could not register global shortcut for ${accelerator}`);
     }
   } catch (err) {
-    logger.warn(`[ptt] Failed to register globalShortcut: ${err.message}`);
+    logger.warn(`[ptt] Failed to register global shortcut: ${err.message}`);
   }
 }
 
@@ -467,10 +520,9 @@ function enablePTT() {
 
 
 
-  const hookStarted = startHook();
-  if (!hookStarted) {
-    registerGlobalShortcutFallback(pttKey);
-  }
+  pttKeyDown = false;
+  startHook();
+  registerGlobalShortcut(pttKey);
 
   isEnabled = true;
   log("info", `Operator enabled. PTT Key: ${pttKeyName}. Mode: ${s.PTT_MODE || "silence"}`);
@@ -480,6 +532,7 @@ function enablePTT() {
 
 function disablePTT() {
   if (!isEnabled) return;
+  pttKeyDown = false;
   stopHook();
   unregisterGlobalShortcut();
   if (isRecording) {
@@ -999,6 +1052,9 @@ app.whenReady().then(() => {
   // Without this, getUserMedia in the capture window is denied outright.
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(permission === "media");
+  });
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
+    return permission === "media";
   });
 
   createTray();

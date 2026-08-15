@@ -828,7 +828,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     KeyY: [21, "Y"], KeyZ: [44, "Z"],
     Digit0: [11, "0"], Digit1: [2, "1"], Digit2: [3, "2"], Digit3: [4, "3"],
     Digit4: [5, "4"], Digit5: [6, "5"], Digit6: [7, "6"], Digit7: [8, "7"],
-    Digit8: [9, "8"], Digit9: [10, "9"]
+    Digit8: [9, "8"], Digit9: [10, "9"],
+    Numpad0: [82, "Numpad0"], Numpad1: [79, "Numpad1"], Numpad2: [80, "Numpad2"],
+    Numpad3: [81, "Numpad3"], Numpad4: [75, "Numpad4"], Numpad5: [76, "Numpad5"],
+    Numpad6: [77, "Numpad6"], Numpad7: [71, "Numpad7"], Numpad8: [72, "Numpad8"],
+    Numpad9: [73, "Numpad9"],
+    NumpadAdd: [78, "NumpadAdd"], NumpadSubtract: [74, "NumpadSubtract"],
+    NumpadMultiply: [55, "NumpadMultiply"], NumpadDivide: [3637, "NumpadDivide"],
+    NumpadDecimal: [83, "NumpadDecimal"],
   };
   for (const [code, [kc, nm]] of Object.entries(ALPHA_CODES)) {
     DOM_KEY_TO_UIOHOOK[code] = { keycode: kc, name: nm };
@@ -867,10 +874,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         setPttLabels(newKey.name);
       } else {
         setPttLabels(currentName);
-      }
-      if (toggleBtn.textContent === "Disable Operator") {
-        await window.operator.toggle();
-        await window.operator.toggle();
       }
     };
 
@@ -917,10 +920,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   pttModeSelect.addEventListener("change", async () => {
     await saveSettings(["PTT_MODE"]);
-    if (toggleBtn.textContent === "Disable Operator") {
-      await window.operator.toggle();
-      await window.operator.toggle();
-    }
   });
 
   // --- Toggle ---

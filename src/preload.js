@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("operator", {
   updateSettings: (s) => ipcRenderer.invoke("update-settings", s),
   getDisplays: () => ipcRenderer.invoke("get-displays"),
   recordPttKey: () => ipcRenderer.invoke("record-ptt-key"),
+  cancelRecordPttKey: () => ipcRenderer.invoke("cancel-record-ptt-key"),
 
   fetchModels: (category, provider, apiKey, baseURL) =>
     ipcRenderer.invoke("fetch-models", category, provider, apiKey, baseURL),

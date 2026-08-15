@@ -64,6 +64,16 @@ body {
   font-size: 11px;
   cursor: pointer;
 }
+#btn-record-ptt.recording {
+  background: var(--error);
+  border-color: var(--error);
+  color: #fff;
+  animation: ptt-pulse 1s infinite alternate;
+}
+@keyframes ptt-pulse {
+  0% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
 
 button {
   background: var(--border-color);

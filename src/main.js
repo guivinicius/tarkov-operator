@@ -41,6 +41,8 @@ let startRecordingPromise = null;
 let captureHandlersBound = false;
 let micAccessRequested = false;
 let pendingScreenshot = null;
+let uiohookActive = false;
+let globalShortcutRegistered = null;
 let pttKeyDown = false;
 let keyRecordingDeferred = null;
 
@@ -56,6 +58,9 @@ function handlePttKey(event, type) {
     keyRecordingDeferred = null;
     return;
   }
+
+  // If configured as mouse button, ignore keyboard events
+  if (pttKey.mouseButton !== undefined) return;
 
   if (event.keycode !== pttKey.keycode) return;
 
@@ -80,8 +85,122 @@ function handlePttKey(event, type) {
   }
 }
 
+function handlePttMouse(event, type) {
+  const s = settingsStore.load();
+  const pttKey = s.PTT_KEY || { keycode: 59, name: "F1" };
+  const pttMode = s.PTT_MODE || "silence";
+
+  const button = event.button || event.data?.mouse?.button;
+  if (!button) return;
+
+  if (keyRecordingDeferred && type === "mousedown") {
+    // Ignore left mouse button (button 1) during recording to allow clicking UI
+    if (button === 1) return;
+    const names = { 2: "Mouse 2 (Right)", 3: "Mouse 3 (Middle)", 4: "Mouse 4", 5: "Mouse 5" };
+    const name = names[button] || `Mouse ${button}`;
+    keyRecordingDeferred.resolve({ mouseButton: button, name });
+    keyRecordingDeferred = null;
+    return;
+  }
+
+  // If configured as keyboard key, ignore mouse events
+  if (pttKey.mouseButton === undefined || pttKey.mouseButton !== button) return;
+
+  if (type === "mousedown") {
+    if (pttKeyDown) return;
+    pttKeyDown = true;
+
+    if (pttMode === "hold") {
+      startRecording();
+    } else if (pttMode === "toggle") {
+      if (isRecording) stopRecording(false);
+      else startRecording();
+    } else if (pttMode === "silence") {
+      if (isRecording) stopRecording(true);
+      else startRecording();
+    }
+  } else if (type === "mouseup") {
+    pttKeyDown = false;
+    if (pttMode === "hold") {
+      stopRecording(false);
+    }
+  }
+}
+
 function onUiohookKeydown(e) { handlePttKey(e, "keydown"); }
 function onUiohookKeyup(e) { handlePttKey(e, "keyup"); }
+function onUiohookMousedown(e) { handlePttMouse(e, "mousedown"); }
+function onUiohookMouseup(e) { handlePttMouse(e, "mouseup"); }
+
+function startHook() {
+  if (uiohookActive) return true;
+  try {
+    uIOhook.on("keydown", onUiohookKeydown);
+    uIOhook.on("keyup", onUiohookKeyup);
+    uIOhook.on("mousedown", onUiohookMousedown);
+    uIOhook.on("mouseup", onUiohookMouseup);
+    uIOhook.start();
+    uiohookActive = true;
+    return true;
+  } catch (err) {
+    logger.warn(`[ptt] uIOhook start failed: ${err.message}`);
+    return false;
+  }
+}
+
+function stopHook() {
+  if (!uiohookActive) return;
+  try {
+    uIOhook.off("keydown", onUiohookKeydown);
+    uIOhook.off("keyup", onUiohookKeyup);
+    uIOhook.off("mousedown", onUiohookMousedown);
+    uIOhook.off("mouseup", onUiohookMouseup);
+    if (!keyRecordingDeferred) {
+      try { uIOhook.stop(); } catch (_) {}
+    }
+  } catch (_) {}
+  uiohookActive = false;
+}
+
+function registerGlobalShortcutFallback(pttKey) {
+  if (globalShortcutRegistered) {
+    try { globalShortcut.unregister(globalShortcutRegistered); } catch (_) {}
+    globalShortcutRegistered = null;
+  }
+
+  const keyName = pttKey.name;
+  if (!keyName || pttKey.mouseButton !== undefined) return;
+
+  try {
+    const registered = globalShortcut.register(keyName, () => {
+      const s = settingsStore.load();
+      const pttMode = s.PTT_MODE || "silence";
+      if (pttMode === "hold") {
+        if (isRecording) stopRecording(false);
+        else startRecording();
+      } else if (pttMode === "toggle") {
+        if (isRecording) stopRecording(false);
+        else startRecording();
+      } else {
+        if (isRecording) stopRecording(true);
+        else startRecording();
+      }
+    });
+    if (registered) {
+      globalShortcutRegistered = keyName;
+      log("info", `[ptt] Registered Electron global shortcut: ${keyName}`);
+    }
+  } catch (err) {
+    logger.warn(`[ptt] Failed to register globalShortcut: ${err.message}`);
+  }
+}
+
+function unregisterGlobalShortcut() {
+  if (globalShortcutRegistered) {
+    try { globalShortcut.unregister(globalShortcutRegistered); } catch (_) {}
+    globalShortcutRegistered = null;
+  }
+}
 
 async function startRecording() {
     if (isRecording || startRecordingPromise) return;
@@ -348,11 +467,10 @@ function enablePTT() {
 
 
 
-  uIOhook.on("keydown", onUiohookKeydown);
-  uIOhook.on("keyup", onUiohookKeyup);
-  try {
-      uIOhook.start();
-  } catch(e) { /* already started */ }
+  const hookStarted = startHook();
+  if (!hookStarted) {
+    registerGlobalShortcutFallback(pttKey);
+  }
 
   isEnabled = true;
   log("info", `Operator enabled. PTT Key: ${pttKeyName}. Mode: ${s.PTT_MODE || "silence"}`);
@@ -362,8 +480,8 @@ function enablePTT() {
 
 function disablePTT() {
   if (!isEnabled) return;
-  uIOhook.off("keydown", onUiohookKeydown);
-  uIOhook.off("keyup", onUiohookKeyup);
+  stopHook();
+  unregisterGlobalShortcut();
   if (isRecording) {
     isRecording = false;
     audioCapture.cancelCapture();
@@ -640,19 +758,44 @@ ipcMain.handle("record-ptt-key", async () => {
   return new Promise((resolve) => {
     const wasDisabled = !isEnabled;
     if (wasDisabled) {
-      try { uIOhook.start(); } catch(e) {}
-      uIOhook.on("keydown", onUiohookKeydown);
+      startHook();
     }
-    
+
+    let finished = false;
+    const cleanup = () => {
+      if (wasDisabled && !isEnabled) {
+        stopHook();
+      }
+    };
+
+    const timer = setTimeout(() => {
+      if (!finished) {
+        finished = true;
+        keyRecordingDeferred = null;
+        cleanup();
+        resolve(null);
+      }
+    }, 15000);
+
     keyRecordingDeferred = {
       resolve: (keyObj) => {
-        if (wasDisabled) {
-          uIOhook.off("keydown", onUiohookKeydown);
+        if (!finished) {
+          finished = true;
+          clearTimeout(timer);
+          cleanup();
+          resolve(keyObj);
         }
-        resolve(keyObj);
       }
     };
   });
+});
+
+ipcMain.handle("cancel-record-ptt-key", () => {
+  if (keyRecordingDeferred) {
+    keyRecordingDeferred.resolve(null);
+    keyRecordingDeferred = null;
+  }
+  return { ok: true };
 });
 
 ipcMain.handle("toggle", () => { toggleEnabled(); return { enabled: isEnabled }; });

@@ -45,3 +45,22 @@ jobs:
             npm run build:win -- --publish always
           fi
         shell: bash
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish GitHub release and generate changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == v* ]]; then
+            echo "Publishing release for $TAG and generating notes..."
+            gh release edit "$TAG" --draft=false --generate-notes --title "Tarkov Operator $TAG"
+          else
+            echo "Not a tag push ($TAG), skipping draft publish."
+          fi
+        shell: bash

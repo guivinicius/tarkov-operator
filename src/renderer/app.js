@@ -782,22 +782,136 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshMemory();
   });
 
+  const DOM_KEY_TO_UIOHOOK = {
+    "F1": { keycode: 59, name: "F1" },
+    "F2": { keycode: 60, name: "F2" },
+    "F3": { keycode: 61, name: "F3" },
+    "F4": { keycode: 62, name: "F4" },
+    "F5": { keycode: 63, name: "F5" },
+    "F6": { keycode: 64, name: "F6" },
+    "F7": { keycode: 65, name: "F7" },
+    "F8": { keycode: 66, name: "F8" },
+    "F9": { keycode: 67, name: "F9" },
+    "F10": { keycode: 68, name: "F10" },
+    "F11": { keycode: 87, name: "F11" },
+    "F12": { keycode: 88, name: "F12" },
+    "Space": { keycode: 57, name: "Space" },
+    "Tab": { keycode: 15, name: "Tab" },
+    "CapsLock": { keycode: 58, name: "CapsLock" },
+    "Backspace": { keycode: 14, name: "Backspace" },
+    "Enter": { keycode: 28, name: "Enter" },
+    "ControlLeft": { keycode: 29, name: "Ctrl" },
+    "ControlRight": { keycode: 3613, name: "Ctrl Right" },
+    "AltLeft": { keycode: 56, name: "Alt" },
+    "AltRight": { keycode: 3640, name: "Alt Right" },
+    "ShiftLeft": { keycode: 42, name: "Shift" },
+    "ShiftRight": { keycode: 54, name: "Shift Right" },
+    "Backquote": { keycode: 41, name: "Backquote" },
+    "Minus": { keycode: 12, name: "Minus" },
+    "Equal": { keycode: 13, name: "Equal" },
+    "BracketLeft": { keycode: 26, name: "BracketLeft" },
+    "BracketRight": { keycode: 27, name: "BracketRight" },
+    "Backslash": { keycode: 43, name: "Backslash" },
+    "Semicolon": { keycode: 39, name: "Semicolon" },
+    "Quote": { keycode: 40, name: "Quote" },
+    "Comma": { keycode: 51, name: "Comma" },
+    "Period": { keycode: 52, name: "Period" },
+    "Slash": { keycode: 53, name: "Slash" },
+  };
+  const ALPHA_CODES = {
+    KeyA: [30, "A"], KeyB: [48, "B"], KeyC: [46, "C"], KeyD: [32, "D"],
+    KeyE: [18, "E"], KeyF: [33, "F"], KeyG: [34, "G"], KeyH: [35, "H"],
+    KeyI: [23, "I"], KeyJ: [36, "J"], KeyK: [37, "K"], KeyL: [38, "L"],
+    KeyM: [50, "M"], KeyN: [49, "N"], KeyO: [24, "O"], KeyP: [25, "P"],
+    KeyQ: [16, "Q"], KeyR: [19, "R"], KeyS: [31, "S"], KeyT: [20, "T"],
+    KeyU: [22, "U"], KeyV: [47, "V"], KeyW: [17, "W"], KeyX: [45, "X"],
+    KeyY: [21, "Y"], KeyZ: [44, "Z"],
+    Digit0: [11, "0"], Digit1: [2, "1"], Digit2: [3, "2"], Digit3: [4, "3"],
+    Digit4: [5, "4"], Digit5: [6, "5"], Digit6: [7, "6"], Digit7: [8, "7"],
+    Digit8: [9, "8"], Digit9: [10, "9"]
+  };
+  for (const [code, [kc, nm]] of Object.entries(ALPHA_CODES)) {
+    DOM_KEY_TO_UIOHOOK[code] = { keycode: kc, name: nm };
+  }
+
+  let isRecordingKey = false;
   pttKeyBtn.addEventListener("click", async () => {
-    pttKeyBtn.textContent = "Listening...";
-    pttKeyBtn.disabled = true;
-    const newKey = await window.operator.recordPttKey();
-    pttKeyBtn.disabled = false;
-    if (newKey) {
-      await window.operator.updateSettings({ PTT_KEY: newKey });
-      setPttLabels(newKey.name);
-    } else {
-      const settings = await window.operator.getSettings();
-      setPttLabels(settings.PTT_KEY?.name || "F1");
+    if (isRecordingKey) {
+      if (window.operator.cancelRecordPttKey) {
+        await window.operator.cancelRecordPttKey();
+      }
+      return;
     }
-    
-    if (toggleBtn.textContent === "Disable Operator") {
-      await window.operator.toggle();
-      await window.operator.toggle();
+    isRecordingKey = true;
+    const settings = await window.operator.getSettings();
+    const currentKey = settings.PTT_KEY || { name: "F1" };
+    const currentName = currentKey.name || "F1";
+    pttKeyBtn.textContent = "Press key...";
+    pttKeyBtn.classList.add("recording");
+
+    let finished = false;
+
+    const cleanup = () => {
+      finished = true;
+      isRecordingKey = false;
+      pttKeyBtn.classList.remove("recording");
+      window.removeEventListener("keydown", domKeyHandler, true);
+      window.removeEventListener("mousedown", domMouseHandler, true);
+    };
+
+    const finishWithKey = async (newKey) => {
+      if (finished) return;
+      cleanup();
+      if (newKey) {
+        await window.operator.updateSettings({ PTT_KEY: newKey });
+        setPttLabels(newKey.name);
+      } else {
+        setPttLabels(currentName);
+      }
+      if (toggleBtn.textContent === "Disable Operator") {
+        await window.operator.toggle();
+        await window.operator.toggle();
+      }
+    };
+
+    const domKeyHandler = (ke) => {
+      ke.preventDefault();
+      ke.stopPropagation();
+      if (ke.key === "Escape") {
+        if (window.operator.cancelRecordPttKey) window.operator.cancelRecordPttKey();
+        finishWithKey(null);
+        return;
+      }
+      const mapped = DOM_KEY_TO_UIOHOOK[ke.code] || {
+        keycode: ke.keyCode || 59,
+        name: ke.code.replace(/^Key|^Digit/, "") || ke.key.toUpperCase()
+      };
+      if (window.operator.cancelRecordPttKey) window.operator.cancelRecordPttKey();
+      finishWithKey(mapped);
+    };
+
+    const domMouseHandler = (me) => {
+      if (me.button >= 1) {
+        me.preventDefault();
+        me.stopPropagation();
+        const names = { 1: "Mouse 3 (Middle)", 2: "Mouse 2 (Right)", 3: "Mouse 4", 4: "Mouse 5" };
+        const name = names[me.button] || `Mouse ${me.button + 1}`;
+        const uiohookButton = me.button === 1 ? 3 : (me.button === 2 ? 2 : me.button + 1);
+        if (window.operator.cancelRecordPttKey) window.operator.cancelRecordPttKey();
+        finishWithKey({ mouseButton: uiohookButton, name });
+      }
+    };
+
+    window.addEventListener("keydown", domKeyHandler, true);
+    window.addEventListener("mousedown", domMouseHandler, true);
+
+    try {
+      const backendKey = await window.operator.recordPttKey();
+      if (!finished) {
+        finishWithKey(backendKey);
+      }
+    } catch (_) {
+      if (!finished) finishWithKey(null);
     }
   });
 

@@ -58,8 +58,14 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           if [[ "$TAG" == v* ]]; then
-            echo "Publishing release for $TAG and generating notes..."
-            gh release edit "$TAG" --draft=false --generate-notes --title "Tarkov Operator $TAG"
+            echo "Fetching generated release notes for $TAG..."
+            NOTES=$(gh api "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$TAG" --jq .body || echo "")
+            echo "Publishing release $TAG..."
+            if [ -n "$NOTES" ]; then
+              gh release edit "$TAG" --draft=false --title "Tarkov Operator $TAG" --notes "$NOTES"
+            else
+              gh release edit "$TAG" --draft=false --title "Tarkov Operator $TAG"
+            fi
           else
             echo "Not a tag push ($TAG), skipping draft publish."
           fi

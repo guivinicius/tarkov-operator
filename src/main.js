@@ -227,8 +227,7 @@ function registerGlobalShortcut(pttKey) {
       const s = settingsStore.load();
       const pttMode = s.PTT_MODE || "silence";
       if (pttMode === "hold") {
-        if (isRecording) stopRecording(false);
-        else startRecording();
+        if (!isRecording) startRecording();
       } else if (pttMode === "toggle") {
         if (isRecording) stopRecording(false);
         else startRecording();

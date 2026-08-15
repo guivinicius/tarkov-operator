@@ -64,6 +64,11 @@ body {
   font-size: 11px;
   cursor: pointer;
 }
+.ptt-picker select:hover,
+.ptt-picker select:focus {
+  border-color: var(--border-active);
+  outline: none;
+}
 #btn-record-ptt.recording {
   background: var(--error);
   border-color: var(--error);

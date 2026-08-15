@@ -16,7 +16,12 @@
       <span id="status-text">Idle</span>
       <div class="ptt-picker">
         <label>PTT</label>
-        <button id="btn-record-ptt" class="btn-sm" style="min-width: 60px;">F1</button>
+        <button id="btn-record-ptt" class="btn-sm" style="min-width: 50px;">F1</button>
+        <select id="input-PTT_MODE">
+          <option value="silence">Silence</option>
+          <option value="hold">Hold</option>
+          <option value="toggle">Toggle</option>
+        </select>
       </div>
       <button id="toggle-btn">Enable Operator</button>
     </div>
@@ -29,7 +34,6 @@
       <button class="tab" data-tab="vision">Vision</button>
       <button class="tab" data-tab="voice">Voice</button>
       <button class="tab" data-tab="data">Data</button>
-      <button class="tab" data-tab="system">System</button>
       <button class="tab" data-tab="logs">Logs</button>
       <button class="tab" data-tab="memory">Memory</button>
     </div>
@@ -57,6 +61,19 @@
         <p class="github-link" style="margin-top: 24px; font-size: 13px; text-align: center;">
           <a href="https://github.com/guivinicius/tarkov-operator" target="_blank" style="color: #4caf50; text-decoration: none;">★ View source or report issues on GitHub</a>
         </p>
+      </div>
+
+      <div class="card" style="margin-top: 0;">
+        <h2>Updates</h2>
+        <div class="field" style="margin-bottom: 8px;">
+          <label>Status</label>
+          <span id="update-status-text" class="status-msg" style="margin-left:0; color:var(--text-main);">Idle</span>
+        </div>
+        <div id="update-actions" style="margin-top: 16px;">
+          <button id="btn-check-update" class="btn-sm">Check for Updates</button>
+          <button id="btn-download-update" class="btn-primary hidden">Download Update</button>
+          <button id="btn-install-update" class="btn-primary hidden">Install & Restart</button>
+        </div>
       </div>
     </div>
 
@@ -346,47 +363,6 @@
             <input type="checkbox" id="input-AUTO_FETCH_DATA" checked>
             <span>On startup</span>
           </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab: System -->
-    <div id="tab-system" class="tab-panel">
-      <div class="card">
-        <h2>Updates</h2>
-        <div class="field" style="margin-bottom: 8px;">
-          <label>Status</label>
-          <span id="update-status-text" class="status-msg" style="margin-left:0; color:var(--fg);">Idle</span>
-        </div>
-        <div id="update-actions" style="margin-top: 16px;">
-          <button id="btn-check-update" class="btn-sm">Check for Updates</button>
-          <button id="btn-download-update" class="btn-primary hidden">Download Update</button>
-          <button id="btn-install-update" class="btn-primary hidden">Install & Restart</button>
-        </div>
-      </div>
-      <div class="card" style="margin-top:0">
-        <h2>Microphone</h2>
-        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5">
-          Recording runs inside the app — no external audio tools to install.
-          Your operating system asks for microphone permission the first time you
-          use push-to-talk. If you denied it, grant it in your system privacy
-          settings and restart the app.
-        </p>
-      </div>
-      <div class="card" style="margin-top:0">
-        <h2>Push-to-talk</h2>
-        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5">
-          Tap your PTT key once to start recording, then just stop talking —
-          recording ends on silence. Tap again while speaking to cancel.
-          Recording is capped at 30 seconds.
-        </p>
-        <div class="field" style="margin-top: 16px;">
-          <label>Mode</label>
-          <select id="input-PTT_MODE">
-            <option value="silence">Silence (Auto-stop)</option>
-            <option value="hold">Hold to talk</option>
-            <option value="toggle">Toggle (Press to start/stop)</option>
-          </select>
         </div>
       </div>
     </div>

@@ -68,7 +68,8 @@ function playBuffer(audioBuffer, format, options = {}) {
       playerWindow.webContents.send("play-audio", {
         id,
         buffer: audioBuffer,
-        applyRadioFilter: options.radioFilter || false
+        applyRadioFilter: options.radioFilter || false,
+        deviceId: options.deviceId || undefined,
       });
     });
   });

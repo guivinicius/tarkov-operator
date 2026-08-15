@@ -22,11 +22,21 @@
     return curve;
   }
 
-  window.api.onPlay(async ({ id, buffer, applyRadioFilter }) => {
+  window.api.onPlay(async ({ id, buffer, applyRadioFilter, deviceId }) => {
     let source, bandpass, waveShaper;
     try {
       if (ctx.state === "suspended") {
         await ctx.resume();
+      }
+
+      if (deviceId && typeof ctx.setSinkId === "function") {
+        try {
+          await ctx.setSinkId(deviceId);
+        } catch (_) {}
+      } else if (!deviceId && typeof ctx.setSinkId === "function" && ctx.sinkId !== "") {
+        try {
+          await ctx.setSinkId("");
+        } catch (_) {}
       }
 
       // decodeAudioData requires an ArrayBuffer

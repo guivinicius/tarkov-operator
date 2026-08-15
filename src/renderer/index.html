@@ -199,14 +199,34 @@
     <!-- Tab: Voice -->
     <div id="tab-voice" class="tab-panel">
       <div class="card">
-
-        <div class="field" style="margin-bottom: 16px;">
+        <h2>Audio Devices</h2>
+        <div class="field">
+          <label>Input (Mic)</label>
+          <div class="field-row">
+            <select id="input-AUDIO_INPUT_DEVICE">
+              <option value="">Default (System Default)</option>
+            </select>
+            <button class="btn-sm" id="refresh-audio-inputs" title="Refresh microphones">⟳</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Output</label>
+          <div class="field-row">
+            <select id="input-AUDIO_OUTPUT_DEVICE">
+              <option value="">Default (System Default)</option>
+            </select>
+            <button class="btn-sm" id="refresh-audio-outputs" title="Refresh output devices">⟳</button>
+          </div>
+        </div>
+        <div class="field" style="margin-top: 16px; margin-bottom: 0;">
           <label>Radio Filter</label>
           <label class="toggle">
             <input type="checkbox" id="input-RADIO_FILTER">
             <span>Enabled</span>
           </label>
         </div>
+      </div>
+      <div class="card" style="margin-top:0">
         <h2>Speech-to-Text</h2>
         <p class="plain-summary" id="stt-summary">Your voice is transcribed with the OpenRouter key you already added.</p>
         <div class="field" style="margin-top: 16px;">

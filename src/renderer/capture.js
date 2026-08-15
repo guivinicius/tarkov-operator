@@ -75,7 +75,7 @@ function encodeWav(samples, sampleRate) {
 
 let session = null;
 
-async function start() {
+async function start(options = {}) {
   if (session) return;
 
   const state = {
@@ -93,21 +93,44 @@ async function start() {
   };
   session = state;
 
+  const audioConstraints = {
+    channelCount: 1,
+    sampleRate: SAMPLE_RATE,
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  };
+  if (options && options.deviceId) {
+    audioConstraints.deviceId = { exact: options.deviceId };
+  }
+
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        sampleRate: SAMPLE_RATE,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
+      audio: audioConstraints,
     });
   } catch (err) {
-    session = null;
-    window.captureBridge.error(`Microphone unavailable: ${err.message}`);
-    return;
+    if (options && options.deviceId) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            sampleRate: SAMPLE_RATE,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+      } catch (fallbackErr) {
+        session = null;
+        window.captureBridge.error(`Microphone unavailable: ${fallbackErr.message}`);
+        return;
+      }
+    } else {
+      session = null;
+      window.captureBridge.error(`Microphone unavailable: ${err.message}`);
+      return;
+    }
   }
 
   state.stream = stream;
@@ -187,8 +210,8 @@ function finish(mode) {
 }
 
 if (typeof window !== "undefined" && window.captureBridge) {
-  window.captureBridge.onStart(() => {
-    start().catch((err) => window.captureBridge.error(err.message));
+  window.captureBridge.onStart((options) => {
+    start(options).catch((err) => window.captureBridge.error(err.message));
   });
   window.captureBridge.onStop(() => finish("deliver"));
   window.captureBridge.onCancel(() => finish("discard"));

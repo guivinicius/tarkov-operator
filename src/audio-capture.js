@@ -96,7 +96,7 @@ function ensureWindow() {
   return readyPromise;
 }
 
-function startCapture() {
+function startCapture(options = {}) {
   if (capturing) return Promise.reject(new Error("Already capturing"));
 
   return ensureWindow().then(
@@ -104,7 +104,7 @@ function startCapture() {
       new Promise((resolve, reject) => {
         startResolve = resolve;
         startReject = reject;
-        captureWindow.webContents.send("capture:start");
+        captureWindow.webContents.send("capture:start", options);
 
         // If the renderer never confirms, fail loudly rather than hanging the
         // PTT state machine forever.

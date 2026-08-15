@@ -5,7 +5,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("captureBridge", {
   onStart: (cb) => {
     ipcRenderer.removeAllListeners("capture:start");
-    ipcRenderer.on("capture:start", () => cb());
+    ipcRenderer.on("capture:start", (_event, options) => cb(options || {}));
   },
   onStop: (cb) => {
     ipcRenderer.removeAllListeners("capture:stop");

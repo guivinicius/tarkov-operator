@@ -22,6 +22,8 @@ function getDefaults() {
     STT_LANGUAGE: "en",
     TTS_LANGUAGE: "en",
     RADIO_FILTER: false,
+    AUDIO_INPUT_DEVICE: "",
+    AUDIO_OUTPUT_DEVICE: "",
     PTT_KEY: { keycode: 59, name: "F1" }, // uiohook-napi keycode for F1
     PTT_MODE: "silence", // "hold", "toggle", "silence"
     SCREENSHOT_ENABLED: false,

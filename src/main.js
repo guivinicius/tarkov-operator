@@ -287,7 +287,9 @@ async function startRecording() {
 
     startRecordingPromise = (async () => {
       try {
-        await audioCapture.startCapture();
+        await audioCapture.startCapture({
+          deviceId: pttSettings.AUDIO_INPUT_DEVICE || undefined,
+        });
       } catch (err) {
         isRecording = false;
         updateTrayMenu();
@@ -437,6 +439,7 @@ function processPipeline(audioBuffer, screenshotBase64) {
     log("info", `[play] ${(ttsResult.audio.length / 1024).toFixed(0)}KB (radioFilter=${s.RADIO_FILTER === true})`);
     await audioPlayback.playBuffer(ttsResult.audio, ttsResult.format, {
       radioFilter: s.RADIO_FILTER === true,
+      deviceId: s.AUDIO_OUTPUT_DEVICE || undefined,
     });
     log("info", "[play] Done");
   }).catch((err) => {
@@ -981,7 +984,8 @@ ipcMain.handle("test-tts", async (_event, opts) => {
     });
     const s = settingsStore.load();
     await audioPlayback.playBuffer(result.audio, result.format, {
-      radioFilter: s.RADIO_FILTER === true
+      radioFilter: s.RADIO_FILTER === true,
+      deviceId: s.AUDIO_OUTPUT_DEVICE || undefined,
     });
     return { ok: true };
   } catch (err) {

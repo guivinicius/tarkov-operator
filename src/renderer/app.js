@@ -68,6 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (tabId === "home") refreshHomeStatus();
     if (tabId === "data") refreshDataStatus();
+    if (tabId === "voice") fetchAndPopulateAudioDevices();
     if (tabId === "memory") refreshMemory();
   }
 
@@ -740,6 +741,81 @@ document.addEventListener("DOMContentLoaded", async () => {
   autoFetchData.addEventListener("change", async () => {
     await saveSettings(["AUTO_FETCH_DATA"]);
   });
+
+  // --- Audio Devices (Input / Output) ---
+
+  const audioInputSelect = $("input-AUDIO_INPUT_DEVICE");
+  const audioOutputSelect = $("input-AUDIO_OUTPUT_DEVICE");
+  const refreshAudioInputs = $("refresh-audio-inputs");
+  const refreshAudioOutputs = $("refresh-audio-outputs");
+
+  async function fetchAndPopulateAudioDevices() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const settings = await window.operator.getSettings();
+      const savedInput = audioInputSelect?.value || settings.AUDIO_INPUT_DEVICE || "";
+      const savedOutput = audioOutputSelect?.value || settings.AUDIO_OUTPUT_DEVICE || "";
+
+      if (audioInputSelect) {
+        audioInputSelect.innerHTML = '<option value="">Default (System Default)</option>';
+        const inputs = devices.filter((d) => d.kind === "audioinput");
+        inputs.forEach((d, idx) => {
+          const opt = document.createElement("option");
+          opt.value = d.deviceId;
+          opt.textContent = d.label || `Microphone ${idx + 1}`;
+          if (d.deviceId === savedInput) opt.selected = true;
+          audioInputSelect.appendChild(opt);
+        });
+        if (savedInput && Array.from(audioInputSelect.options).some((o) => o.value === savedInput)) {
+          audioInputSelect.value = savedInput;
+        }
+      }
+
+      if (audioOutputSelect) {
+        audioOutputSelect.innerHTML = '<option value="">Default (System Default)</option>';
+        const outputs = devices.filter((d) => d.kind === "audiooutput");
+        outputs.forEach((d, idx) => {
+          const opt = document.createElement("option");
+          opt.value = d.deviceId;
+          opt.textContent = d.label || `Speaker / Headphone ${idx + 1}`;
+          if (d.deviceId === savedOutput) opt.selected = true;
+          audioOutputSelect.appendChild(opt);
+        });
+        if (savedOutput && Array.from(audioOutputSelect.options).some((o) => o.value === savedOutput)) {
+          audioOutputSelect.value = savedOutput;
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (audioInputSelect) {
+    audioInputSelect.addEventListener("change", async () => {
+      await saveSettings(["AUDIO_INPUT_DEVICE"]);
+    });
+  }
+
+  if (audioOutputSelect) {
+    audioOutputSelect.addEventListener("change", async () => {
+      await saveSettings(["AUDIO_OUTPUT_DEVICE"]);
+    });
+  }
+
+  if (refreshAudioInputs) {
+    refreshAudioInputs.addEventListener("click", () => fetchAndPopulateAudioDevices());
+  }
+
+  if (refreshAudioOutputs) {
+    refreshAudioOutputs.addEventListener("click", () => fetchAndPopulateAudioDevices());
+  }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener("devicechange", () => {
+      fetchAndPopulateAudioDevices();
+    });
+  }
+
+  fetchAndPopulateAudioDevices();
 
   // --- Vision / Screenshot settings ---
 

@@ -5,6 +5,16 @@
 
 Voice companion for Escape from Tarkov. Tap a key, ask a question out loud, and hear an answer without alt-tabbing to a wiki.
 
+> [!NOTE]
+> ### 🛡️ Anti-Cheat & Battlestate Games TOS Safety
+> **Tarkov Operator is 100% external and out-of-process:**
+> - **No Memory Reading or Injection:** Does not touch `EscapeFromTarkov.exe`, hook DLLs, read RAM, or alter game files.
+> - **No Network Sniffing:** Does not intercept or analyze game packets.
+> - **Public Data Only:** All item, quest, and ballistics data comes from public [tarkov.dev](https://tarkov.dev) APIs.
+> - **OS-Level Screen Capture:** Vision uses standard OS desktop screenshots (the same mechanism used by OBS and Discord screen share).
+> 
+> *Tarkov Operator functions purely like a hands-free second-monitor wiki and voice assistant.*
+
 ## Download
 
 Get the latest version from [GitHub Releases](https://github.com/guivinicius/tarkov-operator/releases).

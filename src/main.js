@@ -274,7 +274,12 @@ async function startRecording() {
       const tScreenshot = Date.now();
       pendingScreenshot = screenCapture.captureScreen(pttSettings.SCREENSHOT_DISPLAY || undefined)
         .then((result) => {
-          if (result) log("info", `[screenshot] captured ${result.width}x${result.height} in ${((Date.now() - tScreenshot) / 1000).toFixed(2)}s`);
+          if (result) {
+            log("info", `[screenshot] captured ${result.width}x${result.height} (${Math.round(result.sizeBytes / 1024)}KB) in ${((Date.now() - tScreenshot) / 1000).toFixed(2)}s`);
+            if (settingsWindow && !settingsWindow.isDestroyed()) {
+              settingsWindow.webContents.send("screenshot-captured", result);
+            }
+          }
           return result;
         })
         .catch((err) => {
@@ -895,6 +900,43 @@ ipcMain.handle("get-displays", async () => {
   }
 });
 
+ipcMain.handle("capture-test-screenshot", async () => {
+  try {
+    const s = settingsStore.load();
+    const res = await screenCapture.captureScreen(s.SCREENSHOT_DISPLAY || undefined, {
+      bypassGameCheck: true,
+      saveToDisk: true,
+    });
+    if (res) {
+      log("info", `[screenshot] Manual test capture: ${res.width}x${res.height} (${Math.round(res.sizeBytes / 1024)}KB)`);
+      if (settingsWindow && !settingsWindow.isDestroyed()) {
+        settingsWindow.webContents.send("screenshot-captured", res);
+      }
+      return res;
+    }
+    return { error: "Failed to capture screen" };
+  } catch (err) {
+    log("error", `[screenshot] Test capture error: ${err.message}`);
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("get-last-screenshot", () => {
+  return screenCapture.getLastScreenshot();
+});
+
+ipcMain.handle("open-screenshots-folder", async () => {
+  const dir = screenCapture.getScreenshotsDir();
+  if (dir) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    await shell.openPath(dir);
+    return { ok: true };
+  }
+  return { ok: false, error: "Screenshots directory not set" };
+});
+
 ipcMain.handle("validate-key", async (_event, provider, apiKey) => {
   const result = await keyValidator.validate(provider, apiKey);
   log(result.ok ? "info" : "error", `[validate] ${provider}: ${result.message}`);
@@ -1038,6 +1080,7 @@ ipcMain.handle("install-update", () => {
 app.whenReady().then(() => {
   dataStore.init(app.getPath("userData"));
   settingsStore.init(app.getPath("userData"));
+  screenCapture.init(path.join(app.getPath("userData"), "screenshots"));
 
   try {
     const snapshotPath = path.join(__dirname, "..", "data", "snapshot.json");

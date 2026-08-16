@@ -69,6 +69,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (tabId === "home") refreshHomeStatus();
     if (tabId === "data") refreshDataStatus();
     if (tabId === "voice") fetchAndPopulateAudioDevices();
+    if (tabId === "vision") {
+      fetchAndPopulateDisplays();
+      refreshLastScreenshot();
+    }
     if (tabId === "memory") refreshMemory();
   }
 
@@ -817,11 +821,73 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   fetchAndPopulateAudioDevices();
 
-  // --- Vision / Screenshot settings ---
+  // --- Vision / Screenshot settings & Inspector ---
 
   const screenshotEnabled = $("input-SCREENSHOT_ENABLED");
   const screenshotDisplay = $("input-SCREENSHOT_DISPLAY");
   const refreshDisplays = $("refresh-displays");
+  const btnTestCapture = $("btn-test-capture");
+  const btnOpenScreenshotsFolder = $("btn-open-screenshots-folder");
+  const screenshotStatus = $("screenshot-status");
+  const screenshotPreviewWrapper = $("screenshot-preview-wrapper");
+  const screenshotImg = $("screenshot-img");
+  const screenshotPlaceholder = $("screenshot-placeholder");
+  const screenshotMeta = $("screenshot-meta");
+  const screenshotMetaTime = $("screenshot-meta-time");
+  const screenshotMetaRes = $("screenshot-meta-res");
+  const screenshotMetaSize = $("screenshot-meta-size");
+
+  const screenshotModal = $("screenshot-modal");
+  const screenshotModalBackdrop = $("screenshot-modal-backdrop");
+  const modalCloseBtn = $("modal-close-btn");
+  const modalImg = $("modal-img");
+  const modalTitle = $("modal-title");
+
+  let currentScreenshotData = null;
+
+  function displayScreenshot(data) {
+    if (!data || !data.base64) {
+      currentScreenshotData = null;
+      screenshotImg.classList.add("hidden");
+      screenshotPlaceholder.classList.remove("hidden");
+      screenshotMeta.classList.add("hidden");
+      return;
+    }
+
+    currentScreenshotData = data;
+    screenshotImg.src = `data:image/jpeg;base64,${data.base64}`;
+    screenshotImg.classList.remove("hidden");
+    screenshotPlaceholder.classList.add("hidden");
+    screenshotMeta.classList.remove("hidden");
+
+    if (data.timestamp) {
+      screenshotMetaTime.textContent = new Date(data.timestamp).toLocaleTimeString();
+    } else {
+      screenshotMetaTime.textContent = "Just now";
+    }
+
+    if (data.width && data.height) {
+      screenshotMetaRes.textContent = `${data.width}×${data.height}`;
+    } else {
+      screenshotMetaRes.textContent = "1920×1080";
+    }
+
+    const kb = data.sizeBytes
+      ? Math.round(data.sizeBytes / 1024)
+      : Math.round(data.base64.length * 3 / 4 / 1024);
+    screenshotMetaSize.textContent = `${kb} KB`;
+  }
+
+  async function refreshLastScreenshot() {
+    try {
+      const data = await window.operator.getLastScreenshot();
+      if (data) displayScreenshot(data);
+    } catch (_) {}
+  }
+
+  window.operator.onScreenshotCaptured((data) => {
+    displayScreenshot(data);
+  });
 
   async function fetchAndPopulateDisplays() {
     const displays = await window.operator.getDisplays();
@@ -850,8 +916,63 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   refreshDisplays.addEventListener("click", () => fetchAndPopulateDisplays());
 
-  // Populate displays on init if screenshot is enabled
-  if (screenshotEnabled.checked) fetchAndPopulateDisplays();
+  if (btnTestCapture) {
+    btnTestCapture.addEventListener("click", async () => {
+      btnTestCapture.disabled = true;
+      setStatus(screenshotStatus, "Capturing...");
+      try {
+        const result = await window.operator.captureTestScreenshot();
+        if (result && !result.error && result.base64) {
+          displayScreenshot(result);
+          setStatus(screenshotStatus, "Captured!");
+          setTimeout(() => setStatus(screenshotStatus, ""), 3000);
+        } else {
+          setStatus(screenshotStatus, result?.error || "Capture failed");
+        }
+      } catch (err) {
+        setStatus(screenshotStatus, `Error: ${err.message}`);
+      } finally {
+        btnTestCapture.disabled = false;
+      }
+    });
+  }
+
+  if (btnOpenScreenshotsFolder) {
+    btnOpenScreenshotsFolder.addEventListener("click", async () => {
+      await window.operator.openScreenshotsFolder();
+    });
+  }
+
+  if (screenshotPreviewWrapper) {
+    screenshotPreviewWrapper.addEventListener("click", () => {
+      if (currentScreenshotData && currentScreenshotData.base64) {
+        modalImg.src = `data:image/jpeg;base64,${currentScreenshotData.base64}`;
+        const timeStr = currentScreenshotData.timestamp ? new Date(currentScreenshotData.timestamp).toLocaleTimeString() : "";
+        const resStr = (currentScreenshotData.width && currentScreenshotData.height) ? `${currentScreenshotData.width}×${currentScreenshotData.height}` : "";
+        modalTitle.textContent = `Screenshot Preview ${resStr ? `(${resStr})` : ""} ${timeStr ? `- ${timeStr}` : ""}`;
+        screenshotModal.classList.remove("hidden");
+      }
+    });
+  }
+
+  function closeModal() {
+    screenshotModal.classList.add("hidden");
+  }
+
+  if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeModal);
+  if (screenshotModalBackdrop) screenshotModalBackdrop.addEventListener("click", closeModal);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && screenshotModal && !screenshotModal.classList.contains("hidden")) {
+      closeModal();
+    }
+  });
+
+  // Populate displays & screenshot on init if screenshot is enabled
+  if (screenshotEnabled.checked) {
+    fetchAndPopulateDisplays();
+    refreshLastScreenshot();
+  }
 
   document.getElementById("clear-memory-btn").addEventListener("click", async () => {
     await window.operator.clearMemory();

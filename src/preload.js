@@ -7,6 +7,14 @@ contextBridge.exposeInMainWorld("operator", {
   getSettings: () => ipcRenderer.invoke("get-settings"),
   updateSettings: (s) => ipcRenderer.invoke("update-settings", s),
   getDisplays: () => ipcRenderer.invoke("get-displays"),
+  captureTestScreenshot: () => ipcRenderer.invoke("capture-test-screenshot"),
+  getLastScreenshot: () => ipcRenderer.invoke("get-last-screenshot"),
+  openScreenshotsFolder: () => ipcRenderer.invoke("open-screenshots-folder"),
+  onScreenshotCaptured: (cb) => {
+    const h = (_e, data) => cb(data);
+    ipcRenderer.on("screenshot-captured", h);
+    return () => ipcRenderer.removeListener("screenshot-captured", h);
+  },
   recordPttKey: () => ipcRenderer.invoke("record-ptt-key"),
   cancelRecordPttKey: () => ipcRenderer.invoke("cancel-record-ptt-key"),
 

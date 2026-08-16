@@ -5,11 +5,6 @@
 
 Voice companion for Escape from Tarkov. Tap a key, ask a question out loud, and hear an answer without alt-tabbing to a wiki.
 
-<img width="649" height="631" alt="Screenshot 2026-08-10 at 2 29 22 PM" src="https://github.com/user-attachments/assets/2c3c7da7-c7d2-4b66-b979-680e66ca0ae8" />
-<img width="654" height="628" alt="Screenshot 2026-08-10 at 2 29 30 PM" src="https://github.com/user-attachments/assets/d7132fd8-5b7e-4cd9-99f3-c8acf188392f" />
-<img width="665" height="638" alt="Screenshot 2026-08-10 at 2 29 40 PM" src="https://github.com/user-attachments/assets/29d75179-7331-4e9f-b783-5f994bf1c110" />
-
-
 ## Download
 
 Get the latest version from [GitHub Releases](https://github.com/guivinicius/tarkov-operator/releases).
@@ -47,6 +42,50 @@ Text-to-speech defaults to your built-in system voice, so audio works with no ex
 
 There is a 30-second hard cap on recording length.
 
+## Features
+
+- **🎙️ Push-to-Talk Voice Pipeline**
+  - Configurable hotkey (F1–F24, keyboard keys, or Mouse buttons 3/4/5).
+  - Multiple PTT modes: **Silence Detection** (auto-stop), **Hold**, and **Toggle**.
+  - Integrated audio capture with silence gating and tap-again cancel.
+  - Optional tactical **Radio Audio Filter** for authentic military comms.
+
+- **👁️ Vision & In-Game Screenshot Context**
+  - Captures the active game screen on PTT for visual intelligence (inventory, loadout, extraction signs, landmarks).
+  - High-resolution (`1920x1080`) capture with high detail passing to multimodal models (GPT-4o, Claude 3.5/3.7, Gemini 2.0).
+  - **Screenshot Inspector**: UI preview with metadata, full-size lightbox viewer, test capture tool, and local screenshot history on disk.
+  - Strict anti-hallucination guardrails to prevent inventing inventory items or loot.
+
+- **🎯 Tactical AI Operator Persona**
+  - Concise, professional radio operator persona (1–2 sentences, zero fluff, voice-optimized for TTS).
+  - **Survival-First Navigation**: Proactively warns of tactical dangers, sniper sightlines, hot zones, open crossings, and chokepoints during route guidance.
+
+- **⏱️ Hybrid Session Management**
+  - **Inactivity Timeout**: Automatically clears raid context after 20 minutes of idle time to prevent map bleed between raids.
+  - **Safe Sliding Window**: Retains recent turns (~10 turns) with atomic tool-call preservation.
+  - **In-Game Voice Commands**: Say *"New raid"*, *"Reset comms"*, *"Clear radio"*, or *"Nova raid"* to instantly reset session context without alt-tabbing.
+
+- **📦 Live Game Data & Speech-Shaped Tools**
+  - Offline-first SQLite + FTS5 database populated from `tarkov.dev` (ships with pre-seeded snapshot).
+  - **Ammo vs. Armor**: Ballistics and penetration effectiveness across Armor Classes 1–6.
+  - **Item Valuation**: Flea market prices, trader buy prices, price-per-slot, and barter value.
+  - **Map Intelligence**: Map extraction points, faction availability (PMC/Scav), and map info.
+  - **Quest Tracker**: Objectives, required quest items, traders, and map requirements.
+  - **Hideout Requirements**: Station modules, item requirements, and upgrade costs.
+
+- **🧠 Persistent User Memory**
+  - Remembers long-term facts across sessions (player name, faction, trader levels, custom preferences) via SQLite storage.
+
+- **🌐 Multi-Provider & Multi-Language Support**
+  - **LLM**: OpenRouter, OpenAI, Anthropic, Ollama / Local OpenAI-compatible endpoints.
+  - **STT**: OpenRouter Whisper, OpenAI Whisper, ElevenLabs Scribe, Local Whisper.
+  - **TTS**: System Native TTS (macOS `say` / Windows SAPI), ElevenLabs, OpenRouter, OpenAI.
+  - **Languages**: English, Portuguese (pt-BR), Spanish (es), and Russian (ru).
+
+- **🔄 Desktop System Tray & Auto-Updates**
+  - Runs in system tray with status indicator and quick toggles.
+  - Auto-update detection and one-click GitHub release installer.
+
 ## What it's good at
 
 The operator is trained on live game data. Try asking these:
@@ -55,6 +94,8 @@ The operator is trained on live game data. Try asking these:
 - **Item Value:** "What is a LEDX worth?" or "Should I keep this GPU or sell it?"
 - **Quest Objectives:** "What do I need for Delivery from the Past?" or "Where is the pocket watch on Customs?"
 - **Map Extracts:** "Where are the extracts on Reserve?" or "Is ZB-013 open?"
+- **Vision:** "What ammo is in this magazine?", "What should I drop from my rig to make room?"
+- **Session Comms:** "New raid", "Reset comms"
 
 ## Build from source
 

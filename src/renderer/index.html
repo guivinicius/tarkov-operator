@@ -211,6 +211,29 @@
           </div>
         </div>
       </div>
+
+      <div class="card" style="margin-top: 0;">
+        <h2>Screenshot Inspector</h2>
+        <p class="hint" style="margin-bottom: 8px;">
+          Inspect the exact image sent to the LLM. Click the preview thumbnail to view full size.
+        </p>
+        <div class="screenshot-actions">
+          <button id="btn-test-capture" class="btn-sm">Capture Test Screenshot</button>
+          <button id="btn-open-screenshots-folder" class="btn-sm">Open Screenshots Folder</button>
+          <span id="screenshot-status" class="status-msg"></span>
+        </div>
+        <div id="screenshot-preview-wrapper" class="screenshot-preview-wrapper" title="Click to view full size">
+          <img id="screenshot-img" class="screenshot-img hidden" alt="Screenshot preview" />
+          <div id="screenshot-placeholder" class="screenshot-placeholder">
+            No screenshot captured yet.<br>Click "Capture Test Screenshot" or use push-to-talk in-game.
+          </div>
+        </div>
+        <div id="screenshot-meta" class="screenshot-meta hidden">
+          <span id="screenshot-meta-time" class="meta-badge"></span>
+          <span id="screenshot-meta-res" class="meta-badge"></span>
+          <span id="screenshot-meta-size" class="meta-badge"></span>
+        </div>
+      </div>
     </div>
 
     <!-- Tab: Voice -->
@@ -396,7 +419,20 @@
         </div>
       </div>
     </div>
+  <!-- Fullscreen Lightbox Modal for Screenshot Inspection -->
+  <div id="screenshot-modal" class="modal hidden">
+    <div class="modal-backdrop" id="screenshot-modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modal-title">Screenshot Preview</span>
+        <button id="modal-close-btn" class="modal-close" title="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="modal-img" src="" alt="Full size screenshot" />
+      </div>
+    </div>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -40,7 +40,40 @@ function chooseRetrieval(caps) {
   return caps === false ? "rag" : "tools";
 }
 
+const RESET_COMMAND_PATTERNS = [
+  /^(new\s+raid|nova\s+raid)$/i,
+  /^(reset\s+(comms|radio|session|history)|reiniciar\s+(sess[aã]o|comunica[cç][oõ]es))$/i,
+  /^(clear\s+(session|radio|history|comms)|limpar\s+(sess[aã]o|hist[oó]rico))$/i,
+  /^(start\s+new\s+raid|iniciar\s+nova\s+raid)$/i,
+];
+
+function isResetCommand(text) {
+  if (!text || typeof text !== "string") return false;
+  const clean = text.trim().toLowerCase().replace(/[.!?,]/g, "");
+  return RESET_COMMAND_PATTERNS.some((p) => p.test(clean));
+}
+
 async function process(userText, opts = {}) {
+  // 0. Voice session reset command check
+  if (isResetCommand(userText)) {
+    llm.newSession("voice_command");
+    let ack = "Comms reset. Standing by for new raid.";
+    try {
+      const s = settingsStore.load();
+      if (s.TTS_LANGUAGE === "pt-br") ack = "Comunicações reiniciadas. Aguardando nova incursão.";
+      else if (s.TTS_LANGUAGE === "es") ack = "Comunicaciones reiniciadas. A la espera de nueva incursión.";
+      else if (s.TTS_LANGUAGE === "ru") ack = "Связь сброшена. Готов к новому рейду.";
+    } catch {}
+
+    logger.debug(`[agent] Voice reset command executed: "${userText}"`);
+    return {
+      text: ack,
+      model: "system",
+      promptTokens: 0,
+      completionTokens: 0,
+    };
+  }
+
   // 1. Memory profile — injected in ALL cases (not part of the RAG/tools tradeoff — D7)
   let memoryProfile = "";
   let customDirectives = "";
@@ -208,4 +241,4 @@ async function process(userText, opts = {}) {
   };
 }
 
-module.exports = { process, chooseRetrieval, isLocalConfig };
+module.exports = { process, chooseRetrieval, isLocalConfig, isResetCommand };

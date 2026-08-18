@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarkov Operator — Voice AI Companion for Escape from Tarkov</title>
+  <meta name="description" content="Real-time push-to-talk voice assistant for Escape from Tarkov. Ask about ammo penetration, quest keys, flea market prices, and extracts without alt-tabbing.">
+  <meta property="og:title" content="Tarkov Operator — Voice AI Companion">
+  <meta property="og:description" content="Ask Tarkov questions out loud. Get instant answers on ammo pen, quest items, flea prices, and extracts without alt-tabbing.">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header / Navigation -->
+  <header class="header">
+    <div class="container nav">
+      <a href="#" class="nav-brand">
+        <img src="assets/icon.png" alt="Tarkov Operator Logo">
+        <span>Tarkov Operator</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#how-it-works" class="nav-link">Demo</a></li>
+        <li><a href="#safety" class="nav-link">Safety</a></li>
+        <li><a href="#setup" class="nav-link">Setup</a></li>
+        <li><a href="#faq" class="nav-link">FAQ</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="https://github.com/guivinicius/tarkov-operator" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
+        <a href="#download" class="btn btn-primary btn-sm">Download</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-content">
+      <div class="badge">
+        <span class="pulse-dot"></span>
+        <span>Push-to-Talk AI Companion</span>
+      </div>
+
+      <h1>Ask Tarkov questions out loud.<br><span class="gradient-text">Never Alt-Tab again.</span></h1>
+
+      <p class="hero-subtitle">
+        A desktop voice companion powered by live <strong>tarkov.dev</strong> data. Tap a key while raiding, ask your question, and hear tactical answers spoken back directly into your headset.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="https://github.com/guivinicius/tarkov-operator/releases" class="btn btn-primary btn-win download-win-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+          <span>Download for Windows (.exe)</span>
+        </a>
+        <a href="https://github.com/guivinicius/tarkov-operator/releases" class="btn btn-secondary btn-mac download-mac-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.64 1.35-.58.66-1.09 1.73-.95 2.76 1.01.08 2.05-.51 2.67-1.26z"/></svg>
+          <span>macOS (.dmg)</span>
+        </a>
+      </div>
+
+      <div class="release-meta">
+        <span id="latest-version-label">Latest Release</span>
+        <span>•</span>
+        <span>100% Free & Open Source</span>
+        <span>•</span>
+        <span>No In-Game Memory Access</span>
+      </div>
+
+      <!-- Interactive Voice Showcase -->
+      <div id="how-it-works" class="demo-showcase">
+        <div class="demo-header">
+          <div class="window-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <span class="demo-title">PUSH-TO-TALK SIMULATION [KEY: F1]</span>
+          <div></div>
+        </div>
+        <div class="demo-tabs">
+          <button class="demo-tab-btn active" data-demo="ammo">Ammo vs Armor</button>
+          <button class="demo-tab-btn" data-demo="value">Flea & Loot Value</button>
+          <button class="demo-tab-btn" data-demo="quest">Quest Objectives</button>
+          <button class="demo-tab-btn" data-demo="extract">Map & Extracts</button>
+        </div>
+        <div class="demo-body">
+          <div class="chat-bubble-container">
+            <div class="bubble bubble-user">
+              <div class="bubble-user-label">You (Voice)</div>
+              <p id="demo-user-text">"What ammo penetrates class 5 armor?"</p>
+            </div>
+            <div class="bubble bubble-ai">
+              <div class="bubble-ai-header">
+                <div class="bubble-ai-label">Operator (Audio Response)</div>
+                <div class="voice-wave">
+                  <span class="wave-bar"></span>
+                  <span class="wave-bar"></span>
+                  <span class="wave-bar"></span>
+                  <span class="wave-bar"></span>
+                </div>
+              </div>
+              <p id="demo-ai-text">Top choices: 7.62x51mm M61 (64 pen), 7.62x54mmR SNB (62 pen), and 5.56x45mm SSA AP (56 pen) will reliably pierce Class 5 armor on the first shot. Budget pick: 7.62x39mm PP or 5.56mm M855A1 will break through after 2-3 hits.</p>
+              <span id="demo-data-tag" class="bubble-data-tag">Source: tarkov.dev live ammo table</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Capabilities</span>
+        <h2>Everything You Need in Raid</h2>
+        <p>Built specifically for Escape from Tarkov players. Fast, concise spoken answers formatted for real-time tactical decisions.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+          </div>
+          <h3>Ammo vs. Armor</h3>
+          <p>Instant penetration tier calculations and damage values against specific armor classes and helmets.</p>
+          <div class="voice-quote">"Is M855A1 viable against Korund class 5?"</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <h3>Flea Market & Loot Value</h3>
+          <p>Live flea market averages, vendor prices, and slot-value comparisons to prioritize your backpack space.</p>
+          <div class="voice-quote">"What is a Military Flash Drive worth?"</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <h3>Quests & Hideout</h3>
+          <p>Find-in-raid quest item requirements, key locations, trader tasks, and hideout module upgrade components.</p>
+          <div class="voice-quote">"What do I need for Delivery from the Past?"</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+          </div>
+          <h3>Maps & Extraction Status</h3>
+          <p>PMC and Scav extraction prerequisites, vehicle extract fees, key requirements, and switch locations.</p>
+          <div class="voice-quote">"Where are the extracts on Reserve?"</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          </div>
+          <h3>Optional Vision Context</h3>
+          <p>Optionally take a snapshot of your screen on hotkey press so the assistant can read your inventory, stash, or map.</p>
+          <div class="voice-quote">"Which of these attachments fits on my M4?"</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+          </div>
+          <h3>Push-to-Talk Silence Detection</h3>
+          <p>Tap your hotkey once, speak naturally, and stop talking. Silence detection automatically cuts the mic and sends your query.</p>
+          <div class="voice-quote">Tap F1 -> Speak -> Instant Audio Answer</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Safety Section -->
+  <section id="safety" class="section" style="padding-top: 0;">
+    <div class="container">
+      <div class="safety-box">
+        <div style="text-align: center; max-width: 680px; margin: 0 auto;">
+          <span class="section-tag">Architecture & Safety</span>
+          <h2>How It Works (and What It Doesn't Do)</h2>
+          <p>Tarkov Operator runs completely isolated from the Escape from Tarkov game process. Here are the exact technical facts:</p>
+        </div>
+
+        <div class="safety-grid">
+          <div class="safety-item">
+            <div class="safety-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <h4>No Memory Reading</h4>
+              <p>Does not scan RAM, read DMA, or access game process memory in any way.</p>
+            </div>
+          </div>
+
+          <div class="safety-item">
+            <div class="safety-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <h4>No DLL Injection or Hooking</h4>
+              <p>Never hooks DirectX, graphics shaders, Windows overlays, or game binaries.</p>
+            </div>
+          </div>
+
+          <div class="safety-item">
+            <div class="safety-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <h4>No Game File Modification</h4>
+              <p>Game files, configuration settings, and network packets are completely untouched.</p>
+            </div>
+          </div>
+
+          <div class="safety-item">
+            <div class="safety-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <h4>Public Web APIs Only</h4>
+              <p>All game data is fetched from the public <a href="https://tarkov.dev" target="_blank" rel="noopener noreferrer" style="color: #60a5fa;">tarkov.dev</a> GraphQL API and indexed locally via SQLite FTS5.</p>
+            </div>
+          </div>
+
+          <div class="safety-item">
+            <div class="safety-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <h4>100% Open Source</h4>
+              <p>Every line of code is open source and auditable by anyone on GitHub.</p>
+            </div>
+          </div>
+
+          <div class="safety-item">
+            <div class="safety-item-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <h4>Local Data Cache</h4>
+              <p>Ships with offline game snapshot data so common lookups execute with zero latency.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3-Step Setup Section -->
+  <section id="setup" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Getting Started</span>
+        <h2>Up and Running in 2 Minutes</h2>
+        <p>Simple setup with no complex configuration required.</p>
+      </div>
+
+      <div class="steps-container">
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <h3>Download & Install</h3>
+          <p>Download the installer for Windows (<code>.exe</code>) or macOS (<code>.dmg</code>). Run the app to open the settings panel.</p>
+          <div class="step-tip">
+            <strong>Unsigned App Note:</strong> On Windows SmartScreen, click <em>More Info → Run anyway</em>. On macOS, right-click the app and choose <em>Open</em>.
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <h3>Add Your API Key</h3>
+          <p>In the <strong>Providers</strong> tab, paste your <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" style="color: #60a5fa;">OpenRouter</a> API key. A single key covers both the fast AI model and Whisper speech-to-text.</p>
+          <div class="step-tip">
+            <strong>Flexible:</strong> Also supports OpenAI, Anthropic, ElevenLabs, and local Ollama.
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <h3>Set PTT Key & Raid</h3>
+          <p>Pick your push-to-talk key (default is <code>F1</code>). Click <strong>Enable Operator</strong>, minimize to system tray, and head into your raid!</p>
+          <div class="step-tip">
+            <strong>Usage:</strong> Tap once to speak, tap again to cancel recording anytime.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Questions & Answers</span>
+        <h2>Frequently Asked Questions</h2>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Why do Windows or macOS show a security warning when installing?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            <p>Code-signing certificates for Windows and Apple Developer programs cost hundreds of dollars annually. As an open-source hobby project, the app is currently unsigned.</p>
+            <p>The entire source code is public and can be verified by anyone. On Windows, click <strong>More info → Run anyway</strong>. On macOS, right-click the app in Applications and click <strong>Open</strong>.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How much does OpenRouter / LLM usage cost?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            <p>Modern fast models (such as GPT-4o-mini or Claude 3.5 Haiku) combined with Whisper speech transcription cost around <strong>$0.001 – $0.005 per voice query</strong>. Even asking 20 questions across a full gaming session costs less than 5 cents total.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Can I use local LLMs (like Ollama) for 100% free offline usage?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            <p>Yes! Tarkov Operator supports Ollama / local endpoints with automatic RAG (Retrieval-Augmented Generation) fallback for models that don't support function calling.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>What voice text-to-speech (TTS) engines are supported?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            <p>By default, it uses your operating system's built-in system voice (zero configuration, zero cost). You can also configure ultra-realistic AI voices via ElevenLabs or OpenRouter TTS in the settings tab.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Where does the game data come from?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            <p>Game data (ammo stats, flea market prices, quest objectives, and extracts) is provided by the community-driven <a href="https://tarkov.dev" target="_blank" rel="noopener noreferrer" style="color: #60a5fa;">tarkov.dev</a> GraphQL API and synced into a local SQLite database for instant retrieval.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download CTA Banner -->
+  <section id="download" class="section" style="padding-bottom: 96px;">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Ready to Upgrade Your Raids?</h2>
+        <p>Download Tarkov Operator for free, set your push-to-talk key, and get instant tactical answers without breaking immersion.</p>
+        <div class="hero-buttons">
+          <a href="https://github.com/guivinicius/tarkov-operator/releases" class="btn btn-primary btn-win download-win-link">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+            <span>Download for Windows (.exe)</span>
+          </a>
+          <a href="https://github.com/guivinicius/tarkov-operator/releases" class="btn btn-secondary btn-mac download-mac-link">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.64 1.35-.58.66-1.09 1.73-.95 2.76 1.01.08 2.05-.51 2.67-1.26z"/></svg>
+            <span>macOS (.dmg)</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <img src="assets/icon.png" alt="Tarkov Operator Icon">
+          <span>Tarkov Operator</span>
+        </div>
+        <ul class="footer-links">
+          <li><a href="https://github.com/guivinicius/tarkov-operator" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="https://github.com/guivinicius/tarkov-operator/releases" target="_blank" rel="noopener noreferrer">Releases</a></li>
+          <li><a href="https://github.com/guivinicius/tarkov-operator/issues" target="_blank" rel="noopener noreferrer">Report an Issue</a></li>
+          <li><a href="https://github.com/guivinicius/tarkov-operator/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License (MIT)</a></li>
+        </ul>
+      </div>
+      <div class="footer-disclaimer">
+        Escape from Tarkov is a registered trademark of Battlestate Games Limited. Tarkov Operator is an independent, open-source fan project and is not affiliated with, endorsed by, or sponsored by Battlestate Games. Game data courtesy of <a href="https://tarkov.dev" target="_blank" rel="noopener noreferrer" style="color: #9ca3af;">tarkov.dev</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

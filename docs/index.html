@@ -23,6 +23,7 @@
       <ul class="nav-links">
         <li><a href="#features" class="nav-link">Features</a></li>
         <li><a href="#how-it-works" class="nav-link">Demo</a></li>
+        <li><a href="#tour" class="nav-link">Tour</a></li>
         <li><a href="#safety" class="nav-link">Safety</a></li>
         <li><a href="#setup" class="nav-link">Setup</a></li>
         <li><a href="#faq" class="nav-link">FAQ</a></li>
@@ -174,6 +175,61 @@
           <h3>Push-to-Talk Silence Detection</h3>
           <p>Tap your hotkey once, speak naturally, and stop talking. Silence detection automatically cuts the mic and sends your query.</p>
           <div class="voice-quote">Tap F1 -> Speak -> Instant Audio Answer</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- App Tour / Screenshot Carousel Section -->
+  <section id="tour" class="section" style="padding-top: 0;">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Interface Tour</span>
+        <h2>Explore Every Tab</h2>
+        <p>Simple, dark-themed tactical settings designed to get out of your way during gameplay.</p>
+      </div>
+
+      <div class="carousel-container">
+        <div class="carousel-window">
+          <div class="carousel-window-header">
+            <div class="window-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <span class="carousel-window-title">Tarkov Operator — <span id="carousel-tab-name">Home</span></span>
+            <div style="width: 52px;"></div>
+          </div>
+          
+          <div class="carousel-tabs">
+            <button class="carousel-tab-btn active" data-tab="home">Home</button>
+            <button class="carousel-tab-btn" data-tab="providers">Providers</button>
+            <button class="carousel-tab-btn" data-tab="llm">LLM</button>
+            <button class="carousel-tab-btn" data-tab="vision">Vision</button>
+            <button class="carousel-tab-btn" data-tab="voice">Voice</button>
+            <button class="carousel-tab-btn" data-tab="data">Data</button>
+            <button class="carousel-tab-btn" data-tab="logs">Logs</button>
+            <button class="carousel-tab-btn" data-tab="memory">Memory</button>
+          </div>
+
+          <div class="carousel-display">
+            <button class="carousel-nav-btn prev-btn" id="carousel-prev" aria-label="Previous tab" title="Previous tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            
+            <div class="carousel-image-wrapper">
+              <img id="carousel-img" src="assets/screenshots/home.png" alt="Tarkov Operator Home Screen" />
+            </div>
+
+            <button class="carousel-nav-btn next-btn" id="carousel-next" aria-label="Next tab" title="Next tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+
+          <div class="carousel-caption">
+            <span id="carousel-badge" class="carousel-caption-badge">Home</span>
+            <p id="carousel-caption-text">Instant system status, push-to-talk reminder, and 1-click update checker.</p>
+          </div>
         </div>
       </div>
     </div>

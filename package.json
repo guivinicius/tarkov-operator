@@ -22,7 +22,8 @@
     "format:check": "prettier --check 'src/**/*.{js,css,html}' 'tests/**/*.js'",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
-    "build": "electron-builder --mac --win"
+    "build": "electron-builder --mac --win",
+    "screenshots": "electron scripts/generate-screenshots.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

@@ -26,9 +26,56 @@ const DEMO_DATA = {
   }
 };
 
+// Screenshot carousel tabs data
+const CAROUSEL_DATA = {
+  home: {
+    title: "Home",
+    badge: "Dashboard",
+    text: "At-a-glance status, quick push-to-talk reminder, model recommendations, and 1-click update checker."
+  },
+  providers: {
+    title: "Providers",
+    badge: "API Keys",
+    text: "Configure OpenRouter, OpenAI, Anthropic, or ElevenLabs keys with built-in instant validation."
+  },
+  llm: {
+    title: "LLM",
+    badge: "Model & Identity",
+    text: "Select your preferred low-latency model (Gemini 2.5 Flash, Claude Haiku 3.5, GPT-4o-mini) and player callsign."
+  },
+  vision: {
+    title: "Vision",
+    badge: "Screenshot Context",
+    text: "Capture screenshots on PTT tap so the AI can inspect your inventory, weapon attachments, or in-game map."
+  },
+  voice: {
+    title: "Voice",
+    badge: "STT & TTS",
+    text: "Select audio devices, toggle radio communication filters, and pick system voices or ElevenLabs."
+  },
+  data: {
+    title: "Data",
+    badge: "Game Cache",
+    text: "Local SQLite + FTS5 database caching 2,400+ items, maps, quests, and extract requirements with offline fallback."
+  },
+  logs: {
+    title: "Logs",
+    badge: "Activity Terminal",
+    text: "Real-time tactical log of speech-to-text transcription timings, tool invocations, and audio responses."
+  },
+  memory: {
+    title: "Memory",
+    badge: "User Facts",
+    text: "Persistent facts the agent remembers about your playstyle, favorite calibers, and quest priorities."
+  }
+};
+
+const CAROUSEL_TABS = ["home", "providers", "llm", "vision", "voice", "data", "logs", "memory"];
+
 // Initialize dynamic behavior
 document.addEventListener("DOMContentLoaded", () => {
   setupDemoTabs();
+  setupScreenshotCarousel();
   setupFaqAccordion();
   detectOSAndHighlightDownload();
   fetchLatestRelease();
@@ -63,6 +110,59 @@ function setupDemoTabs() {
       }, 150);
     });
   });
+}
+
+// Screenshot carousel controller
+function setupScreenshotCarousel() {
+  const tabBtns = document.querySelectorAll(".carousel-tab-btn");
+  const imgEl = document.getElementById("carousel-img");
+  const tabNameEl = document.getElementById("carousel-tab-name");
+  const badgeEl = document.getElementById("carousel-badge");
+  const textEl = document.getElementById("carousel-caption-text");
+  const prevBtn = document.getElementById("carousel-prev");
+  const nextBtn = document.getElementById("carousel-next");
+
+  if (!imgEl || !tabBtns.length) return;
+
+  let currentIndex = 0;
+
+  function setCarouselTab(index) {
+    if (index < 0) index = CAROUSEL_TABS.length - 1;
+    if (index >= CAROUSEL_TABS.length) index = 0;
+    currentIndex = index;
+
+    const tabKey = CAROUSEL_TABS[currentIndex];
+    const data = CAROUSEL_DATA[tabKey];
+    if (!data) return;
+
+    // Update active tab buttons
+    tabBtns.forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === tabKey);
+    });
+
+    // Animate image switch
+    imgEl.style.opacity = "0.2";
+    setTimeout(() => {
+      imgEl.src = `assets/screenshots/${tabKey}.png`;
+      imgEl.alt = `Tarkov Operator ${data.title} Screen`;
+      if (tabNameEl) tabNameEl.textContent = data.title;
+      if (badgeEl) badgeEl.textContent = data.badge;
+      if (textEl) textEl.textContent = data.text;
+      imgEl.style.opacity = "1";
+    }, 120);
+  }
+
+  tabBtns.forEach((btn, idx) => {
+    btn.addEventListener("click", () => setCarouselTab(idx));
+  });
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => setCarouselTab(currentIndex - 1));
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => setCarouselTab(currentIndex + 1));
+  }
 }
 
 // FAQ Accordion

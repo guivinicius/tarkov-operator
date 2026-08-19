@@ -88,6 +88,8 @@ function setupDemoTabs() {
   const aiText = document.getElementById("demo-ai-text");
   const dataTag = document.getElementById("demo-data-tag");
 
+  if (!tabs.length || !userText || !aiText) return;
+
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
       tabs.forEach(t => t.classList.remove("active"));

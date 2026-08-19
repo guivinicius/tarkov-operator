@@ -819,9 +819,13 @@ p {
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
+  font-family: var(--font-sans);
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .carousel-tab-btn:hover {
@@ -880,6 +884,16 @@ p {
   -webkit-backdrop-filter: blur(8px);
   transition: var(--transition);
   z-index: 5;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+}
+
+.carousel-nav-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .carousel-nav-btn:hover {

@@ -16,7 +16,7 @@
       <span id="status-text">Idle</span>
       <div class="ptt-picker">
         <label>PTT</label>
-        <button id="btn-record-ptt" class="btn-sm" style="min-width: 50px;">F1</button>
+        <button id="btn-record-ptt" class="btn-sm" style="min-width: 48px;">F1</button>
         <select id="input-PTT_MODE">
           <option value="silence">Silence</option>
           <option value="hold">Hold</option>
@@ -55,11 +55,11 @@
         <p class="home-desc" id="home-desc">
           You're set up. Tap your push-to-talk key (<span id="home-desc-ptt">F1</span>) and ask a question out loud. Everything in the other tabs is optional.
         </p>
-        <div class="first-run-note" style="margin-top: 16px;">
-          <strong>Model Tips:</strong> Fast models like <code>Gemini 3.5 Flash</code>, <code>Claude Haiku 4.5</code>, or <code>GPT-4.1</code> offer the best low-latency conversational experience. Heavy reasoning models may take too long to reply verbally.
+        <div class="first-run-note">
+          <strong>Model Tips:</strong> Fast models like <code>Gemini 2.5 Flash</code>, <code>Claude Haiku 3.5</code>, or <code>GPT-4o-mini</code> offer the best low-latency conversational experience. Heavy reasoning models may take too long to reply verbally.
         </div>
-        <p class="github-link" style="margin-top: 24px; font-size: 13px; text-align: center;">
-          <a href="https://github.com/guivinicius/tarkov-operator" target="_blank" style="color: #4caf50; text-decoration: none;">★ View source or report issues on GitHub</a>
+        <p class="github-link" style="margin-top: 18px; font-size: 12px; text-align: center;">
+          <a href="https://github.com/guivinicius/tarkov-operator" target="_blank" style="color: #60a5fa; text-decoration: none;">★ View source or report issues on GitHub</a>
         </p>
       </div>
 
@@ -69,7 +69,7 @@
           <label>Status</label>
           <span id="update-status-text" class="status-msg" style="margin-left:0; color:var(--text-main);">Idle</span>
         </div>
-        <div id="update-actions" style="margin-top: 16px;">
+        <div id="update-actions" style="margin-top: 14px;">
           <button id="btn-check-update" class="btn-sm">Check for Updates</button>
           <button id="btn-download-update" class="btn-primary hidden">Download Update</button>
           <button id="btn-install-update" class="btn-primary hidden">Install & Restart</button>
@@ -128,14 +128,13 @@
           <div class="validate-status hidden" id="validate-ELEVENLABS_API_KEY"></div>
           <p class="key-field-note">Provides TTS. <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">Get key here</a>.</p>
         </div>
-
-
       </div>
     </div>
 
     <!-- Tab: LLM -->
     <div id="tab-llm" class="tab-panel">
       <div class="card">
+        <h2>Model & Provider</h2>
         <div class="field">
           <label>Provider</label>
           <select id="input-LLM_PROVIDER">
@@ -163,8 +162,9 @@
         </details>
       </div>
       <div class="card" style="margin-top:0">
+        <h2>Session</h2>
         <div class="field">
-          <label>Session</label>
+          <label>History</label>
           <div class="field-row">
             <span id="session-info" class="hint">—</span>
             <button class="btn-sm" id="new-session-btn">New Session</button>
@@ -173,8 +173,8 @@
       </div>
       <div class="card" style="margin-top:0">
         <h2>Identity</h2>
-        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5;margin-bottom:16px;">
-          How the operator refers to you. Leave blank for no name/title.
+        <p class="hint" style="color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
+          How the operator refers to you in conversations. Leave blank for default callsign.
         </p>
         <div class="field">
           <label>Player Name</label>
@@ -191,14 +191,14 @@
           Capture the game screen when you press PTT so the LLM can see what you're looking at.
           Requires a vision-capable model (GPT-4o, Claude, Gemini, etc.).
         </p>
-        <div class="field" style="margin-bottom: 16px;">
+        <div class="field" style="margin-bottom: 14px;">
           <label>Screenshot</label>
           <label class="toggle">
             <input type="checkbox" id="input-SCREENSHOT_ENABLED">
             <span>Enabled</span>
           </label>
         </div>
-        <p class="hint" data-depends-on="SCREENSHOT_ENABLED" data-dep-is="true" style="margin-bottom:8px;color:var(--warn)">
+        <p class="hint" data-depends-on="SCREENSHOT_ENABLED" data-dep-is="true" style="margin-bottom:10px;color:var(--warn)">
           ⚠ Increases token usage per request. Only the Tarkov game window is captured.
         </p>
         <div class="field" data-depends-on="SCREENSHOT_ENABLED" data-dep-is="true">
@@ -214,7 +214,7 @@
 
       <div class="card" style="margin-top: 0;">
         <h2>Screenshot Inspector</h2>
-        <p class="hint" style="margin-bottom: 8px;">
+        <p class="hint" style="margin-bottom: 10px;">
           Inspect the exact image sent to the LLM. Click the preview thumbnail to view full size.
         </p>
         <div class="screenshot-actions">
@@ -258,7 +258,7 @@
             <button class="btn-sm" id="refresh-audio-outputs" title="Refresh output devices">⟳</button>
           </div>
         </div>
-        <div class="field" style="margin-top: 16px; margin-bottom: 0;">
+        <div class="field" style="margin-top: 14px; margin-bottom: 0;">
           <label>Radio Filter</label>
           <label class="toggle">
             <input type="checkbox" id="input-RADIO_FILTER">
@@ -269,7 +269,7 @@
       <div class="card" style="margin-top:0">
         <h2>Speech-to-Text</h2>
         <p class="plain-summary" id="stt-summary">Your voice is transcribed with the OpenRouter key you already added.</p>
-        <div class="field" style="margin-top: 16px;">
+        <div class="field" style="margin-top: 14px;">
           <label>Input Language</label>
           <select id="input-STT_LANGUAGE">
             <option value="en">English (en)</option>
@@ -278,7 +278,7 @@
             <option value="ru">Russian (ru)</option>
           </select>
         </div>
-        <div class="field" style="margin-top: 16px;">
+        <div class="field" style="margin-top: 14px;">
           <label>Provider</label>
           <select id="input-STT_PROVIDER">
             <option value="local">Local (Whisper)</option>
@@ -302,7 +302,7 @@
       </div>
       <div class="card">
         <h2>Text-to-Speech</h2>
-        <p class="hint" style="font-style:normal;color:#aaa;line-height:1.5;margin-bottom:16px;">
+        <p class="hint" style="color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
           <strong>Note:</strong> Some TTS voices (especially Local or ElevenLabs v1) only support English. If you choose another language, they may speak it with a heavy accent.
         </p>
         <div class="field">
@@ -317,7 +317,7 @@
         <div class="field">
           <label>Provider</label>
           <select id="input-TTS_PROVIDER">
-            <option value="local">Local (system TTS)</option>
+            <option value="local">Local (System TTS)</option>
             <option value="openrouter">OpenRouter</option>
             <option value="openai">OpenAI</option>
             <option value="elevenlabs">ElevenLabs</option>
@@ -377,7 +377,7 @@
       </div>
       <div class="card" style="margin-top:0">
         <h2>RAG Context</h2>
-        <p class="hint" style="margin-bottom:6px">
+        <p class="hint" style="margin-bottom:10px">
           Game data is injected into the LLM prompt as context when your question matches items, maps, or quests.
         </p>
         <div class="field">
@@ -403,7 +403,7 @@
     <div id="tab-memory" class="tab-panel">
       <div class="card">
         <h2>User Memory</h2>
-        <p class="hint" style="margin-bottom:8px">
+        <p class="hint" style="margin-bottom:12px">
           Persistent facts the agent remembers about you. Edit or delete as needed.
           The agent uses these facts to personalize responses.
         </p>
@@ -414,11 +414,13 @@
           <tbody id="memory-body"></tbody>
         </table>
         <div id="memory-empty" class="hint">No facts saved yet. Ask the operator to remember something.</div>
-        <div id="memory-actions" style="margin-top:8px">
+        <div id="memory-actions" style="margin-top:12px">
           <button id="clear-memory-btn" class="btn-sm">Clear All</button>
         </div>
       </div>
     </div>
+  </div>
+
   <!-- Fullscreen Lightbox Modal for Screenshot Inspection -->
   <div id="screenshot-modal" class="modal hidden">
     <div class="modal-backdrop" id="screenshot-modal-backdrop"></div>

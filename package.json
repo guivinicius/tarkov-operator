@@ -1,6 +1,6 @@
 {
   "name": "tarkov-operator-desktop",
-  "version": "0.1.0-beta.10",
+  "version": "0.1.0-beta.11",
   "description": "Desktop AI companion for Escape from Tarkov — push-to-talk, system tray, game-aware RAG",
   "main": "src/main.js",
   "license": "MIT",
